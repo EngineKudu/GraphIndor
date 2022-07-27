@@ -5,6 +5,8 @@
 #include <vector>
 #include <algorithm>
 
+Graph_D graph;
+
 //主线程用于通信
 void fetch(std::vector<Embedding> &vec)
 {
@@ -13,13 +15,13 @@ void fetch(std::vector<Embedding> &vec)
     {
         if (vec[i].get_state() == 0)
         {
-            if (in_this_part(vec[i].get_request()))
+            if (graph.in_this_part(vec[i].get_request()))
             {
-                get_neighbor(vec[i].get_request(), edge);
+                graph.get_neighbor(vec[i].get_request(), edge);
             }
             else
             {
-                ask_neighbor(vec[i].get_request(), edge);
+                graph.ask_neighbor(vec[i].get_request(), edge);
             }
             vec[i].add_edge(edge);
         }
@@ -35,8 +37,7 @@ std::vector<Embedding> triangle_extend(Embedding *e)
         int cnt = list[0]->e_cnt;
         for (int i = 0; i < cnt; i++)
         {
-            int vet = list[0]->vet[i];
-            Embedding ep(e, vet[i]);
+            Embedding ep(e, list[0]->vet[i]);
             vec.push_back(ep);
         }
     }
@@ -57,7 +58,7 @@ std::vector<Embedding> triangle_extend(Embedding *e)
             }
             if (flag)
             {
-                Embedding ep(e, vet[i]);
+                Embedding ep(e, list[0]->vet[i]);
                 vec.push_back(ep);
             }
         }
