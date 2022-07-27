@@ -4,9 +4,10 @@
 #include <queue>
 #include <vector>
 #include <algorithm>
+#include <omp.h>
 
-//主线程用于通信
-void fetch(std::vector<Embedding> &vec)
+//1号线程用于通信
+void communication(std::vector<Embedding> &vec)
 {
     Edges edge;
     for (int i = 0; i < (int)vec.size(); i++)
@@ -24,6 +25,17 @@ void fetch(std::vector<Embedding> &vec)
             vec[i].add_edge(edge);
         }
     }//Todo：一组同时进行通信
+}
+
+void computation(std::vector<Embedding> (*extend)(Embedding *e), Embedding *e)
+{
+    std::vector<Embedding> vec = (*extend)(e);
+    for (int i = 0; i < (int)vec.size(); i++)
+    {
+        #pragma omp flush(task)
+        task.insert(vec[i]);
+    }
+    (*e).set_state(2);
 }
 
 std::vector<Embedding> triangle_extend(Embedding *e)
@@ -63,4 +75,50 @@ std::vector<Embedding> triangle_extend(Embedding *e)
         }
     }
     return vec;
+}
+
+void kudu(std::vector<Embedding> (*extend)(Embedding *e))
+{
+    Task_Queue task(graph);
+    Embedding nul;
+    for (int i = graph.range_l; i < graph.range_r; i++) //加入一个点的embedding
+    {
+        task.insert((Embedding)(nul, i), true);
+    }
+    #pragma omp parallel shared(task)
+    {
+        int my_rank = omp_get_thread_num();
+        int thread_count = omp_get_num_threads();
+        if (my_rank == 0)
+        {
+            //发送数据
+        }
+        if (my_rank == 1)
+        {
+            while (true)
+            {
+                #pragma omp flush(task)
+                int depth = task.current_depth, index = task.current_machine[task.current_depth];
+                if (depth == 0)
+                {
+                    break;
+                }
+                communication(task.q[depth][index]);
+            }
+        }
+        if (my_rank > 1)
+        {
+            while (true)
+            {
+                #pragma omp flush(task)
+                Embedding* e = task.new_task();
+                if ((*e).size() == 0)
+                {
+                    break;
+                }
+                computation(func, e);
+            }
+        }
+    }
+    //Todo: 向其他机器发送结束信号
 }
