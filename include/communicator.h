@@ -3,10 +3,7 @@
 # include <vector>
 # include "embedding.h"
 # include "edges.h"
-<<<<<<< HEAD
 # include "task_queue.h"
-=======
->>>>>>> d64185d87dacf522ec9ee720a6787b45e0d58f26
 
 typedef int32_t v_index_t ;
 typedef int64_t e_index_t ; 
