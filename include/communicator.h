@@ -30,7 +30,6 @@ public:
         if(buffer != nullptr) delete[] buffer;
     }
 
-    void ins_ask(v_index_t x,Embedding* e); //增加一个询问
     void give_ans(); //线程0
     void ask_ans(Task_Queue* task); //线程1
     void computation_done();
