@@ -53,7 +53,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
         }
         std::vector<Embedding> vec=task->q[depth][index];
         Edges edge;
-        if (! task.is_commued[depth][index])
+        if (! task->is_commued[depth][index])
         {
             if(index==my_rank)
             {
@@ -91,7 +91,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                     vec[i].add_edge(edge);
                 }
             }
-            task.is_commued[depth][index] = 1;
+            task->is_commued[depth][index] = 1;
         }
     }
 }

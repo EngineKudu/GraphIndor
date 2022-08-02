@@ -51,8 +51,6 @@ int main(int argc,char *argv[]) {
     Graph_D* g_d;
     g_d=new Graph_D();
     g_d->init(g);
-    return 0;
-/**/
 /*
     int pattern_size = atoi(argv[2]);
     const char* pattern_str= argv[3];

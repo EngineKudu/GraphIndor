@@ -2,6 +2,7 @@
 #include "../include/embedding.h"
 #include "../include/task_queue.h"
 #include <omp.h>
+#include <stdio.h>
 
 //Todo: 多线程
 void Task_Queue::insert(Embedding new_e, bool is_root)
