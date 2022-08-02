@@ -24,6 +24,8 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     }
     while(!all_solved)
     {
+        int cnt=0;
+        printf("try to give_ans %d\n",++cnt);
         for (int i=0;i<comm_sz;++i)
         {
             if(i==my_rank) continue;
@@ -43,6 +45,8 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     while (!all_solved)
     {
+        int cnt=0;
+        printf("try to ask_ans %d\n",++cnt);
         #pragma omp flush(task)
         int depth = task->current_depth;
         int index = task->commu[depth];
