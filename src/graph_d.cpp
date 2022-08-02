@@ -3,21 +3,22 @@
 #include <mpi.h>
 #include <omp.h>
 
+# include <iostream>
+
 void Graph_D::init(Graph* graph)
 {
-<<<<<<< HEAD
     Graph* G=graph;
-=======
-    Graph G=graph;
->>>>>>> d64185d87dacf522ec9ee720a6787b45e0d58f26
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Barrier(MPI_COMM_WORLD);
     block_size=(G->v_cnt + comm_sz - 1) / comm_sz;
     range_l=block_size*my_rank;
-    range_r=std::min(block_size*(my_rank+1),G->v_cnt);
+    range_r=std::min(block_size*(my_rank+1)-1,G->v_cnt-1);
     v_cnt=0,e_cnt=0;
+    e_index_t sum=0;        
+    vertex=new e_index_t[range_r-range_l+1];
+    edge=new v_index_t[ G->vertex[range_r+1]-G->vertex[range_l] ];
     for (v_index_t i=range_l;i<=range_r;++i)
     {
         vertex[v_cnt]=G->vertex[i];
@@ -25,6 +26,8 @@ void Graph_D::init(Graph* graph)
             edge[++e_cnt]=G->edge[j];
         v_cnt++;
     }
+    printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
+    return ;
 }
 
 bool Graph_D::in_this_part(v_index_t x)
