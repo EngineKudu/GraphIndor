@@ -51,7 +51,7 @@ public:
         {
             for (int i = 0; i < pattern_size; i++)
             {
-                if (is_commued != nullptr ) delete[] is_commued[i];
+                if (is_commued[i] != nullptr ) delete[] is_commued[i];
             }
             delete[] is_commued;
         }

@@ -67,12 +67,12 @@ std::vector<Embedding> triangle_extend(Embedding *e)
 
 long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* graph)
 {
-    Comm* comm;
-    Task_Queue task(graph);
+    Comm* comm=new Comm();
+    Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i < graph->range_r; i++) //加入一个点的embedding
     {
-        Embedding new_e(&task.nul, i);
-        task.insert(new_e, true);
+        Embedding new_e(&task->nul, i);
+        task->insert(new_e, true);
     }
     #pragma omp parallel num_threads(NUM_THREADS) shared(task)
     {
@@ -82,16 +82,16 @@ long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* 
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         printf("I'm thread %d in machine %d.\n",my_rank,machine_rank);
         if (my_rank == 0) comm->give_ans();
-        else if (my_rank == 1) comm->ask_ans(&task);
+        else if (my_rank == 1) comm->ask_ans(task);
         else if (my_rank > 1)
         {
             while (true)
             {
                 #pragma omp flush(task)
-                Embedding* e = task.new_task();
+                Embedding* e = task->new_task();
                 if (e->get_size() == 0)
                     break;
-                computation(extend, e, &task);
+                computation(extend, e, task);
             }
         }
     }

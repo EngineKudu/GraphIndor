@@ -16,7 +16,6 @@ void Graph_D::init(Graph* graph)
     range_l=block_size*my_rank;
     range_r=std::min(block_size*(my_rank+1)-1,G->v_cnt-1);
     v_cnt=0,e_cnt=0;
-    e_index_t sum=0;        
     vertex=new e_index_t[range_r-range_l+1];
     edge=new v_index_t[ G->vertex[range_r+1]-G->vertex[range_l] ];
     for (v_index_t i=range_l;i<=range_r;++i)
@@ -50,8 +49,6 @@ void Graph_D::ask_neighbor(v_index_t x,Edges& E) //获取一个不在此机器�
     MPI_Request rq_recv;
     MPI_Status status;
     int flag;
-    int* a;
-    a[0]=x;
     MPI_Send(&x,1,MPI_INT,tar,0,MPI_COMM_WORLD);
     E.v=x;
     MPI_Irecv(&E.e_cnt,1,MPI_INT,tar,0,MPI_COMM_WORLD,&rq_recv);

@@ -9,23 +9,23 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    v_index_t* ask;
+    int* ask;//应为v_index_t
     MPI_Request* recv_r;
     Edges* e;
     MPI_Status status;
     int flag=0;
-    ask=new v_index_t[comm_sz+1];
+    ask=new int[comm_sz+1];
     recv_r=new MPI_Request[comm_sz+1];
     e=new Edges[comm_sz+1];
     for (int i=0;i<comm_sz;++i)
     {
         if(i==my_rank) continue;
+        printf("%d %d\n",i,my_rank);
         MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
     }
     while(!all_solved)
     {
         int cnt=0;
-        printf("try to give_ans %d\n",++cnt);
         for (int i=0;i<comm_sz;++i)
         {
             if(i==my_rank) continue;
@@ -33,6 +33,7 @@ void Comm::give_ans() //线程0-回复其他机器的询问
             if(flag==0) continue;
             graph->get_neighbor(ask[i],e[i]);
             MPI_Send(e[i].vet,e[i].e_cnt,MPI_INT,i,ask[i],MPI_COMM_WORLD);
+            MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
             //TODO：改为Isend，但要检查一下上次的有没有发出
         }
     }
@@ -46,7 +47,6 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     while (!all_solved)
     {
         int cnt=0;
-        printf("try to ask_ans %d\n",++cnt);
         #pragma omp flush(task)
         int depth = task->current_depth;
         int index = task->commu[depth];
@@ -64,7 +64,6 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 int x;
                 for (int i=0;i<(int)vec.size();++i)
                 {
-//                    if(vec[i].get_state()!=0) break; //Todo:加一个表示这组是否通信完成的标识符
                     x=vec[i].get_request();
                     graph->get_neighbor(x,edge);
                     vec[i].add_edge(edge);
@@ -76,13 +75,11 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 MPI_Status status;
                 for (int i=0;i<size;++i)
                 {
-//                    if(vec[i].get_state()!=0) break;
                     int x=vec[i].get_request();
                     MPI_Send(&x,1,MPI_INT,index,x,MPI_COMM_WORLD);
                 }
                 for (int i=0;i<size;++i)
                 {
-//                    if(vec[i].get_state()!=0) break;
                     MPI_Recv(buffer,max_degree,MPI_INT,index,vec[i].get_request(),MPI_COMM_WORLD,&status);
                     Edges edge;
                     edge.v=vec[i].get_request();

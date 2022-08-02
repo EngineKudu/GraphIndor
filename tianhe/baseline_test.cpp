@@ -1,8 +1,8 @@
-#include <../include/graph.h>
+#include "../include/graph.h"
 #include "../include/graph_d.h"
 #include "../include/embedding.h"
-#include <../include/labeled_graph.h>
-#include <../include/dataloader.h>
+#include "../include/labeled_graph.h"
+#include "../include/dataloader.h"
 #include "../include/pattern.h"
 #include "../include/schedule_IEP.h"
 #include "../include/common.h"
@@ -47,7 +47,6 @@ int main(int argc,char *argv[]) {
 //load graph_d
     int provided;
     MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
-    
     Graph_D* g_d;
     g_d=new Graph_D();
     g_d->init(g);
