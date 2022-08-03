@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <mpi.h>
 #include <omp.h>
+#include <unistd.h>
+#include <stdio.h>
 
 long long extend_result;
 const int NUM_THREADS=4;
@@ -71,11 +73,19 @@ long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* 
 {
     Comm* comm=new Comm();
     Task_Queue* task=new Task_Queue(graph);
+    printf("cnt%d\n", (graph->range_r) - (graph->range_l));
     for (int i = graph->range_l; i < graph->range_r; i++) //加入一个点的embedding
     {
         Embedding new_e(&task->nul, i);
         task->insert(new_e, true);
     }
+
+    int K;
+    MPI_Comm_rank(MPI_COMM_WORLD, &K);
+    task->current_depth = 1;
+    task->current_machine[task->current_depth] = K;
+    task->commu[task->current_depth] = K;
+
     #pragma omp parallel num_threads(NUM_THREADS) shared(task)
     {
         int my_rank = omp_get_thread_num();
@@ -83,7 +93,8 @@ long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* 
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         printf("I'm thread %d in machine %d.\n",my_rank,machine_rank);
-        if (my_rank == 0) comm->give_ans();
+        if (my_rank == 1) comm->ask_ans(task);
+        /*if (my_rank == 0) comm->give_ans();
         else if (my_rank == 1) comm->ask_ans(task);
         else if (my_rank > 1)
         {
@@ -96,7 +107,7 @@ long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* 
                 computation(extend, e, task);
                 break;
             }
-        }
+        }*/
     }
     //Todo: 向其他机器发送结束信号
     return extend_result;

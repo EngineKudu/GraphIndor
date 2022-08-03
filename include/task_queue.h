@@ -14,7 +14,7 @@ public:
     Task_Queue(Graph_D *G) //G表示分布式图储存
     {
         graph = G;
-        current_depth = 1;
+        current_depth = 0;
         current_machine = new int[pattern_size];
         size = new int[pattern_size];
         commu = new int[pattern_size];

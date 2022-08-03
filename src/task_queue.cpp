@@ -30,6 +30,7 @@ Embedding* Task_Queue::new_task()
 {
     int N = (*graph).get_machine_cnt(); 
     int K = (*graph).get_machine_id();
+    //printf("NK%d %d\n", N, K);
     while (current_depth >= 1)
     {
         while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
@@ -38,6 +39,7 @@ Embedding* Task_Queue::new_task()
         }
         if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
         {
+            //return &nul;
             while (q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]].get_state() != 1);
             return &q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
         }
