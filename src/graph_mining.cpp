@@ -14,6 +14,8 @@ const int NUM_THREADS=4;
 
 void computation(std::vector<Embedding> (*extend)(Embedding *e), Embedding *e, Task_Queue* task)
 {
+    printf("Try to computation\n");
+    return;
     std::vector<Embedding> vec = (*extend)(e);
     for (int i = 0; i < (int)vec.size(); i++)
     {
@@ -92,6 +94,7 @@ long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* 
                 if (e->get_size() == 0)
                     break;
                 computation(extend, e, task);
+                break;
             }
         }
     }

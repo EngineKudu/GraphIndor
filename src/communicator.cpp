@@ -6,6 +6,8 @@
 
 void Comm::give_ans() //线程0-回复其他机器的询问
 {
+    printf("Try to give_ans\n");
+    return;
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -41,6 +43,8 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
+    printf("Try to ask_ans\n");
+    return;
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
