@@ -44,6 +44,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    printf("ask%d %d\n", comm_sz, my_rank);
     while (!all_solved)
     {
         int cnt=0;
@@ -59,8 +60,10 @@ void Comm::ask_ans(Task_Queue* task)//线程1
         Edges edge;
         if (! task->is_commued[depth][index])
         {
+            printf("..!%d %d\n", index, my_rank);
             if(index==my_rank)
             {
+                printf("???\n");
                 int x;
                 for (int i=0;i<(int)vec.size();++i)
                 {
@@ -91,6 +94,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                         edge.vet[j]=buffer[j];
                     vec[i].add_edge(edge);
                 }
+                return;
             }
             task->is_commued[depth][index] = 1;
         }
