@@ -36,7 +36,7 @@ public:
     int get_size();
     void set_state(int st);
     int get_request(); //若当前embedding为Pending状态，则返回需要访问的节点编号，否则返回-1
-    void add_edge(Edges edge); //传入需要的边列表，将状态变为Ready
+    void add_edge(Edges* edge); //传入需要的边列表，将状态变为Ready
     Embedding* get_father();
     Edges **get_list(); //返回活动边列表的指针数组
     Edges* get_edge(int u); //返回u节点的所有边，不存在则返回nullptr

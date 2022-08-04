@@ -32,43 +32,40 @@ Embedding* Task_Queue::new_task()
     int N = graph->get_machine_cnt(); 
     int K = graph->get_machine_id();
     Embedding* new_t =nul;
-    #pragma omp critical
+    while (current_depth >= 1)
     {
-        while (current_depth >= 1)
+        printf("![%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+        while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
         {
-            printf("![%d %d %d]\n", K, current_depth, current_machine[current_depth]);
-            while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
-            {
-                (current_machine[current_depth] += 1) %= N;
-            }
-            printf("[%d %d %d]\n", K, current_depth, current_machine[current_depth]);
-            printf("{%d %d}\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size());
-            fflush(stdout);
-            if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
-            {
-                //return &nul;
-                printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
-                fflush(stdout);
-                Embedding* e = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
-                while (true)
-                {
-                    #pragma omp flush(e)
-                    {
-                        if (e->get_state() == 1)
-                            break;
-                    }
-                }
-                printf("True\n");
-                fflush(stdout);
-                new_t = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
-                break;
-            }
-            for (int i = 0; i < N; i++)
-            {
-                q[current_depth][i].clear();
-            }
-            current_depth--;
+            (current_machine[current_depth] += 1) %= N;
         }
+        printf("[%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+        printf("{%d %d}\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size());
+        fflush(stdout);
+        if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
+        {
+            //return &nul;
+            printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
+            fflush(stdout);
+            Embedding* e = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+            while (true)
+            {
+                #pragma omp flush(e)
+                {
+                    if (e->get_state() == 1)
+                        break;
+                }
+            }
+            printf("True\n");
+            fflush(stdout);
+            new_t = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+            break;
+        }
+        for (int i = 0; i < N; i++)
+        {
+            q[current_depth][i].clear();
+        }
+        current_depth--;
     }
     return new_t;
 }

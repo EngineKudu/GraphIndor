@@ -21,9 +21,9 @@ int Embedding::get_request()
     return last;
 }
 
-void Embedding::add_edge(Edges edge)
+void Embedding::add_edge(Edges* edge)
 {
-    list[size - 1] = new Edges(edge);
+    list[size - 1] =edge;
     state = 1;
 }
 

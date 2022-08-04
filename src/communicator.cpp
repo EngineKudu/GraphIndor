@@ -13,12 +13,12 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     int* ask;//应为v_index_t
     MPI_Request* recv_r;
-    Edges* e;
+    Edges** e;
     MPI_Status status;
     int flag=0;
     ask=new int[comm_sz+1];
     recv_r=new MPI_Request[comm_sz+1];
-    e=new Edges[comm_sz+1];
+    e=new Edges*[comm_sz+1];
     for (int i=0;i<comm_sz;++i)
     {
         if(i==my_rank) continue;
@@ -26,14 +26,13 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     }
     while(!all_solved)
     {
-        int cnt=0;
         for (int i=0;i<comm_sz;++i)
         {
             if(i==my_rank) continue;
             MPI_Test(&recv_r[i],&flag,&status);
             if(flag==0) continue;
             graph->get_neighbor(ask[i],e[i]);
-            MPI_Send(e[i].vet,e[i].e_cnt,MPI_INT,i,ask[i],MPI_COMM_WORLD);
+            MPI_Send(e[i]->vet,e[i]->e_cnt,MPI_INT,i,ask[i],MPI_COMM_WORLD);
             MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
             //TODO：改为Isend，但要检查一下上次的有没有发出
         }
@@ -43,12 +42,12 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
     printf("Try to ask_ans\n");
+    fflush(stdout);
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     while (!all_solved)
     {
-        fflush(stdout);
         int cnt=0;
         #pragma omp flush(task)
         int depth = task->current_depth;
@@ -58,22 +57,18 @@ void Comm::ask_ans(Task_Queue* task)//线程1
         {
             break;
         }
-        std::vector<Embedding*> vec=task->q[depth][index];
-        Edges edge;
-        std::vector<Embedding>& vec=task->q[depth][index];
-        Edges edge;
+        std::vector<Embedding*>& vec=task->q[depth][index];
+        Edges* edge;
         if (! task->is_commued[depth][index])
         {
-            printf("..!%d %d %d\n", my_rank, depth, index);
-            fflush(stdout);
             if(index==my_rank)
             {
-                printf("??? %d %d %d %d\n", my_rank, depth, index, (int)vec.size());
-                fflush(stdout);
-                int x;
+                v_index_t x;
                 for (int i=0;i<(int)vec.size();++i)
                 {
+                    edge=new Edges();
                     x=vec[i]->get_request();
+                    //一运行下面这句就报错，sent by the kernel at address(nil)
                     graph->get_neighbor(x,edge);
                     vec[i]->add_edge(edge);
                     printf("V%d %d %d %d\n", my_rank, depth, index, i);
@@ -93,14 +88,14 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 for (int i=0;i<size;++i)
                 {
                     MPI_Recv(buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
-                    Edges edge;
-                    edge.v=vec[i]->get_request();
+                    Edges* edge=new Edges();
+                    edge->v=vec[i]->get_request();
                     int cnt=0;
                     MPI_Get_count(&status,MPI_INT,&cnt);
-                    edge.e_cnt=cnt;
-                    edge.vet=new v_index_t[edge.e_cnt];
-                    for (int j=0;j<edge.e_cnt;++j)
-                        edge.vet[j]=buffer[j];
+                    edge->e_cnt=cnt;
+                    edge->vet=new v_index_t[edge->e_cnt];
+                    for (int j=0;j<edge->e_cnt;++j)
+                        edge->vet[j]=buffer[j];
                     vec[i]->add_edge(edge);
                 }
                 printf("End");
