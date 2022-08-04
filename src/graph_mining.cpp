@@ -83,22 +83,21 @@ long long graph_mining(Graph_D* graph)
         int thread_count = omp_get_num_threads();
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
-/*      if (my_rank == 0) comm->give_ans();
-        else if (my_rank == 1) comm->ask_ans(task);*/
-        if (my_rank > 1)
+        printf("I'm thread %d in machine %d.\n",my_rank,machine_rank);
+        fflush(stdout);
+        if (my_rank == 0) comm->give_ans();
+        else if (my_rank == 1) comm->ask_ans(task);
+        else if (my_rank > 1)
         {
             while (true)
             {
                 #pragma omp flush(task)
-                std::cout<<"102"<<std::endl<<std::flush;
-                Embedding* e;
-                #pragma omp critical
-                {
-                    e = task->new_task();
-                    std::cout<<"104"<<std::endl<<std::flush;
-                    std::cout<<e->get_size()<<std::endl<<std::flush;
-                }
-                computation(e, task);
+                Embedding* e = task->new_task();
+                printf("size%d\n", e->get_size());
+                fflush(stdout);
+                if (e->get_size() == 0)
+                    break;
+                computation(extend, e, task);
                 break;
             }
         }
