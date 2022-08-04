@@ -16,7 +16,7 @@ void Task_Queue::insert(Embedding new_e, bool is_root)
         int K = (*graph).get_machine_id(); //Todo: 当前机器的编号
         current_machine[current_depth] = K;
         commu[current_depth] = K;
-        size[current_depth] = 0;
+        size[current_depth + 1] = 0;
         for (int i = 0; i < N; i++)
         {
             index[current_depth][i] = 0;
@@ -31,23 +31,51 @@ Embedding* Task_Queue::new_task()
     int N = (*graph).get_machine_cnt(); 
     int K = (*graph).get_machine_id();
     //printf("NK%d %d\n", N, K);
-    while (current_depth >= 1)
+    Embedding* new_t = &nul;
+    #pragma omp critical
     {
-        while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
+        while (current_depth >= 1)
         {
-            (current_machine[current_depth] += 1) %= N;
+            printf("![%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+            while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
+            {
+                (current_machine[current_depth] += 1) %= N;
+            }
+            printf("[%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+            printf("{%d %d}\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size());
+            fflush(stdout);
+            if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
+            {
+                //return &nul;
+                printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
+                fflush(stdout);
+                Embedding& e = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+                while (true)
+                {
+                    #pragma omp flush(e)
+                    {
+                        //if (q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]].get_state() == 1)
+                        if (e.get_state() == 1)
+                        {
+                            //printf("!!\n");
+                            //fflush(stdout);
+                            break;
+                        }
+                    }
+                    //printf("..\n");
+                    //fflush(stdout);
+                }
+                printf("True\n");
+                fflush(stdout);
+                new_t = &q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+                break;
+            }
+            for (int i = 0; i < N; i++)
+            {
+                q[current_depth][i].clear();
+            }
+            current_depth--;
         }
-        if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
-        {
-            //return &nul;
-            while (q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]].get_state() != 1);
-            return &q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
-        }
-        for (int i = 0; i < N; i++)
-        {
-            q[current_depth][i].clear();
-        }
-        current_depth--;
     }
-    return &nul;
+    return new_t;
 }

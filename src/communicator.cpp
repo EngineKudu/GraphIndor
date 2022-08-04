@@ -44,13 +44,13 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
     printf("Try to ask_ans\n");
-    return;
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     printf("ask%d %d\n", comm_sz, my_rank);
     while (!all_solved)
     {
+        fflush(stdout);
         int cnt=0;
         #pragma omp flush(task)
         int depth = task->current_depth;
@@ -60,24 +60,29 @@ void Comm::ask_ans(Task_Queue* task)//线程1
         {
             break;
         }
-        std::vector<Embedding> vec=task->q[depth][index];
+        std::vector<Embedding>& vec=task->q[depth][index];
         Edges edge;
         if (! task->is_commued[depth][index])
         {
-            printf("..!%d %d\n", index, my_rank);
+            printf("..!%d %d %d\n", my_rank, depth, index);
+            fflush(stdout);
             if(index==my_rank)
             {
-                printf("???\n");
+                printf("??? %d %d %d %d\n", my_rank, depth, index, (int)vec.size());
+                fflush(stdout);
                 int x;
                 for (int i=0;i<(int)vec.size();++i)
                 {
                     x=vec[i].get_request();
                     graph->get_neighbor(x,edge);
                     vec[i].add_edge(edge);
+                    printf("V%d %d %d %d\n", my_rank, depth, index, i);
                 }
             }
             else
             {
+                printf("BEGIN\n");
+                fflush(stdout);
                 int size=vec.size();
                 MPI_Status status;
                 for (int i=0;i<size;++i)
@@ -98,7 +103,8 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                         edge.vet[j]=buffer[j];
                     vec[i].add_edge(edge);
                 }
-                return;
+                printf("End");
+                fflush(stdout);
             }
             task->is_commued[depth][index] = 1;
         }
