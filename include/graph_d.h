@@ -5,8 +5,8 @@
 # include "edges.h"
 # include <cstdint>
 
-typedef int32_t v_index_t;
-typedef int64_t e_index_t ; 
+typedef int32_t v_index_t;//
+typedef int64_t e_index_t ; //暂时改下
 typedef std::pair<v_index_t,v_index_t> pii ;
 
 class Graph_D
@@ -35,9 +35,9 @@ public:
 
     void init(Graph* graph);
     bool in_this_part(v_index_t x);
-    void get_neighbor(v_index_t x,Edges& E); //获取一个在此机器的点的信息
-    void ask_neighbor(v_index_t x,Edges& E); //获取一个不在此机器的点的信息
-    void give_neighbor(); //回复其他机器的询问
+    void get_neighbor(v_index_t x,Edges* E); //获取一个在此机器的点的信息
+//    void ask_neighbor(v_index_t x,Edges* E); //获取一个不在此机器的点的信息
+//    void give_neighbor(); //回复其他机器的询问
     int get_block_index(v_index_t x); //返回x所在的机器的编号
     int get_machine_cnt(); //返回机器数量
     int get_machine_id(); //返回机器id
