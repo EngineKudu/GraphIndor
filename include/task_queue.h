@@ -18,14 +18,12 @@ public:
         current_machine = new int[pattern_size];
         size = new int[pattern_size];
         commu = new int[pattern_size];
-        memset(current_machine, 0, sizeof(current_machine));
-        memset(size, 0, sizeof(size));
-        memset(commu, 0, sizeof(commu));
-        index = new int*[machine_cnt];
+        memset(current_machine, 0, sizeof(int)*pattern_size);
+        memset(size, 0, sizeof(int)*pattern_size);
+        memset(commu, 0, sizeof(int)*pattern_size);
         is_commued = new int*[machine_cnt];
         for (int i = 0; i < pattern_size; i++)
         {
-            index[i] = new int[machine_cnt];
             is_commued[i] = new int[machine_cnt];
             for (int j = 0; j < machine_cnt; j++)
             {
@@ -33,20 +31,16 @@ public:
                 is_commued[i][j] = 0;
             }
         }
+        nul=new Embedding();
     }
     ~Task_Queue()
     {
         if (current_machine != nullptr) delete[] current_machine;
         if (size != nullptr) delete[] size;
         if (commu != nullptr) delete[] commu;
-        if (index != nullptr)
-        {
-            for (int i = 0; i < pattern_size; i++)
-            {
-                if (index[i] != nullptr) delete[] index[i];
-            }
-            delete[] index;
-        }
+        for (int i = 0; i < pattern_size; i++)
+            for (int j = 0; j < machine_cnt; j++)
+                index[i][j] = 0;
         if (is_commued != nullptr)
         {
             for (int i = 0; i < pattern_size; i++)
@@ -60,12 +54,12 @@ public:
     int current_depth;//当前正在扩展哪一层
     int* current_machine;//每层当前在哪台机器
     int* size;//记录每层目前大小
-    std::vector<Embedding> q[pattern_size][machine_cnt]; //每一层，每一台机器，开一个vector储存
-    int **index; //每一层，每一台机器，已经算到了第几个
+    std::vector<Embedding*> q[pattern_size][machine_cnt]; //每一层，每一台机器，开一个vector储存
+    int index[pattern_size][machine_cnt]; //每一层，每一台机器，已经算到了第几个
     int **is_commued; //每一层，每一台机器，是否已经通信完了
     int *commu; //每一层，已经通信到了第几个
     Graph_D *graph;
-    Embedding nul;
-    void insert(Embedding new_e, bool is_root = false);//加入一个embedding
+    Embedding* nul;
+    void insert(Embedding* new_e, bool is_root = false);//加入一个embedding
     Embedding* new_task();//获取一个新任务,层数与embedding的size相同
 };

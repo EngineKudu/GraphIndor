@@ -3,11 +3,11 @@
 #include "../include/task_queue.h"
 #include <mpi.h>
 #include <omp.h>
+#include <iostream>
 
 void Comm::give_ans() //线程0-回复其他机器的询问
 {
-    printf("Try to give_ans\n");
-    return;
+    std::cout<<"Try to give_ans"<<std::endl<<std::flush;
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -22,7 +22,6 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     for (int i=0;i<comm_sz;++i)
     {
         if(i==my_rank) continue;
-        printf("%d %d\n",i,my_rank);
         MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
     }
     while(!all_solved)
@@ -43,15 +42,12 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
-    printf("Try to ask_ans\n");
-    return;
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    printf("ask%d %d\n", comm_sz, my_rank);
+    std::cout<<"machine"<<my_rank<<" Try to ask_ans"<<std::endl<<std::flush;
     while (!all_solved)
     {
-        int cnt=0;
         #pragma omp flush(task)
         int depth = task->current_depth;
         int index = task->commu[depth];
@@ -60,20 +56,18 @@ void Comm::ask_ans(Task_Queue* task)//线程1
         {
             break;
         }
-        std::vector<Embedding> vec=task->q[depth][index];
+        std::vector<Embedding*> vec=task->q[depth][index];
         Edges edge;
         if (! task->is_commued[depth][index])
         {
-            printf("..!%d %d\n", index, my_rank);
             if(index==my_rank)
             {
-                printf("???\n");
                 int x;
                 for (int i=0;i<(int)vec.size();++i)
                 {
-                    x=vec[i].get_request();
+                    x=vec[i]->get_request();
                     graph->get_neighbor(x,edge);
-                    vec[i].add_edge(edge);
+                    vec[i]->add_edge(edge);
                 }
             }
             else
@@ -82,23 +76,22 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 MPI_Status status;
                 for (int i=0;i<size;++i)
                 {
-                    int x=vec[i].get_request();
+                    int x=vec[i]->get_request();
                     MPI_Send(&x,1,MPI_INT,index,x,MPI_COMM_WORLD);
                 }
                 for (int i=0;i<size;++i)
                 {
-                    MPI_Recv(buffer,max_degree,MPI_INT,index,vec[i].get_request(),MPI_COMM_WORLD,&status);
+                    MPI_Recv(buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
                     Edges edge;
-                    edge.v=vec[i].get_request();
+                    edge.v=vec[i]->get_request();
                     int cnt=0;
                     MPI_Get_count(&status,MPI_INT,&cnt);
                     edge.e_cnt=cnt;
                     edge.vet=new v_index_t[edge.e_cnt];
                     for (int j=0;j<edge.e_cnt;++j)
                         edge.vet[j]=buffer[j];
-                    vec[i].add_edge(edge);
+                    vec[i]->add_edge(edge);
                 }
-                return;
             }
             task->is_commued[depth][index] = 1;
         }

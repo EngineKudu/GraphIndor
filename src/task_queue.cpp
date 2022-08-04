@@ -3,17 +3,18 @@
 #include "../include/task_queue.h"
 #include <omp.h>
 #include <stdio.h>
+#include <iostream>
 
 //Todo: 多线程
-void Task_Queue::insert(Embedding new_e, bool is_root)
+void Task_Queue::insert(Embedding* new_e, bool is_root)
 {
-    q[current_depth + 1][(*graph).get_block_index(new_e.get_request())].push_back(new_e);
+    q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
     size[current_depth + 1]++;
     if (is_root && size[current_depth + 1] >= Max_size)
     {
         current_depth++;
-        int N = (*graph).get_machine_cnt(); //Todo: 机器数量
-        int K = (*graph).get_machine_id(); //Todo: 当前机器的编号
+        int N = graph->get_machine_cnt(); //Todo: 机器数量
+        int K = graph->get_machine_id(); //Todo: 当前机器的编号
         current_machine[current_depth] = K;
         commu[current_depth] = K;
         size[current_depth] = 0;
@@ -28,9 +29,9 @@ void Task_Queue::insert(Embedding new_e, bool is_root)
 //Todo: 多线程
 Embedding* Task_Queue::new_task()
 {
-    int N = (*graph).get_machine_cnt(); 
-    int K = (*graph).get_machine_id();
-    //printf("NK%d %d\n", N, K);
+    int N = graph->get_machine_cnt(); 
+    int K = graph->get_machine_id();
+    std::cout<<"give a new task"<<std::endl<<std::flush;
     while (current_depth >= 1)
     {
         while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
@@ -39,9 +40,9 @@ Embedding* Task_Queue::new_task()
         }
         if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
         {
-            //return &nul;
-            while (q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]].get_state() != 1);
-            return &q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+            while (q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]]->get_state() != 1);
+            std::cout<<"index="<<index[ current_depth ][ current_machine[current_depth] ]<<std::endl<<std::flush;
+            return q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
         }
         for (int i = 0; i < N; i++)
         {
@@ -49,5 +50,5 @@ Embedding* Task_Queue::new_task()
         }
         current_depth--;
     }
-    return &nul;
+    return nul;
 }

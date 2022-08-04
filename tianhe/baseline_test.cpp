@@ -16,9 +16,7 @@
 #include <algorithm>
 #include <chrono>
 
-std::vector<Embedding> triangle_extend(Embedding *e);
-
-long long graph_mining(std::vector<Embedding> (*extend)(Embedding *e), Graph_D* graph);
+long long graph_mining(Graph_D* graph);
 
 int main(int argc,char *argv[]) {
     Graph *g;
@@ -72,7 +70,7 @@ int main(int argc,char *argv[]) {
     double count_t1 = get_wall_time();
     int thread_count = 24;
     //long long ans = g->pattern_matching(schedule_iep, thread_count);
-    long long ans=graph_mining((*triangle_extend), g_d);
+    long long ans=graph_mining(g_d);
     double count_t2 = get_wall_time();
     printf("couting time= %.6lf s\n", count_t2 - count_t1);
     printf("ans=%lld\n", ans);
