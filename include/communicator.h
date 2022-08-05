@@ -19,8 +19,9 @@ public:
     e_index_t max_degree;
     Graph_D* graph;
 
-    Comm() 
+    Comm(Graph_D* G) 
     {
+        graph=G;
         all_solved=0;
         buffer=new v_index_t[buffer_size];
     }

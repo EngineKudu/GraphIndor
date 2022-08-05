@@ -8,8 +8,13 @@
 //Todo: 多线程
 void Task_Queue::insert(Embedding* new_e, bool is_root)
 {
+    if(new_e->get_size()!=1)
+    {
+        printf("size=2! re=%d\n",new_e->get_request());
+        fflush(stdout);
+    }
     q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
-    size[current_depth + 1]++;
+    size[current_depth + 1]++;    
     if (is_root && size[current_depth + 1] >= Max_size)
     {
         current_depth++;

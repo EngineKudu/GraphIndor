@@ -22,7 +22,7 @@ void Graph_D::init(Graph* graph)
     {
         vertex[v_cnt]=G->vertex[i];
         for (e_index_t j=G->vertex[i];j<G->vertex[i+1];++j)
-            edge[++e_cnt]=G->edge[j];
+            edge[e_cnt++]=G->edge[j];
         v_cnt++;
     }
     printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
