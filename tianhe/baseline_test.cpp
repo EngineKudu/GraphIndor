@@ -26,7 +26,8 @@ int main(int argc,char *argv[]) {
     auto t1 = system_clock::now();
 
     bool ok;
-    ok = D.fast_load(g, argv[1]);
+    ok = D.load_data(g, MiCo, argv[1],0,0);
+//    ok = D.fast_load(g, argv[1]);
 
     if (!ok) {
         printf("data load failure :-(\n");

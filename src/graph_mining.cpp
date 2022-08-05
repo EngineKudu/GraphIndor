@@ -62,6 +62,8 @@ void computation(Embedding *e, Task_Queue* task)
 
 long long graph_mining(Graph_D* graph)
 {
+    int K;
+    MPI_Comm_rank(MPI_COMM_WORLD, &K);
     Comm* comm=new Comm(graph);
     Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
@@ -69,8 +71,6 @@ long long graph_mining(Graph_D* graph)
         Embedding* new_e=new Embedding(task->nul, i);
         task->insert(new_e, true);
     }
-    int K;
-    MPI_Comm_rank(MPI_COMM_WORLD, &K);
     task->current_depth = 1;
     task->current_machine[task->current_depth] = K;
     task->commu[task->current_depth] = K;
@@ -78,6 +78,8 @@ long long graph_mining(Graph_D* graph)
     {
         int my_rank = omp_get_thread_num();
         int thread_count = omp_get_num_threads();
+        printf("I'm %d thread of %d machine.\n",my_rank,K);
+        fflush(stdout);
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         if (my_rank == 0) comm->give_ans();

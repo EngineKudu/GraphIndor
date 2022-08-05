@@ -7,7 +7,8 @@
 
 void Comm::give_ans() //线程0-回复其他机器的询问
 {
-    std::cout<<"Try to give_ans"<<std::endl<<std::flush;
+    printf("Try to give_ans\n");
+    fflush(stdout);
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
