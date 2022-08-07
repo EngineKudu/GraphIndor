@@ -52,9 +52,12 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
 void computation(Embedding *e, Task_Queue* task)
 {
     std::vector<Embedding*>* vec=new std::vector<Embedding*>;
-    std::cout<<"Hi"<<std::endl<<std::flush;
+    printf("Hi,compute e:[size=%d,last=%d]\n",e->get_size(),e->get_request());
+    fflush(stdout);
+    e->print_list();
     extend(e,vec);
-    std::cout<<"extend make "<<vec->size()<<" new embeddings"<<std::endl<<std::flush;
+    printf("extend make %d new embeddings\n",(int)vec->size());
+    fflush(stdout);
     for (int i = 0; i < (int)vec->size(); i++)
         task->insert(vec->at(i));
     e->set_state(2);
@@ -78,12 +81,12 @@ long long graph_mining(Graph_D* graph)
     {
         int my_rank = omp_get_thread_num();
         int thread_count = omp_get_num_threads();
-        printf("I'm %d thread of %d machine.\n",my_rank,K);
+        printf("I'm thread %d of machine %d.\n",my_rank,K);
         fflush(stdout);
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
-        if (my_rank == 0) comm->give_ans();
-        else if (my_rank == 1) comm->ask_ans(task);
+        //if (my_rank == 0) comm->give_ans(); else 
+        if (my_rank == 1) comm->ask_ans(task);
         else if (my_rank > 1)
         {
             while (true)
@@ -92,8 +95,6 @@ long long graph_mining(Graph_D* graph)
                 Embedding* e;
                 #pragma omp critical
                     e=task->new_task();
-                printf("size%d\n", e->get_size());
-                fflush(stdout);
                 if (e->get_size() == 0)
                     break;
                 computation(e, task);

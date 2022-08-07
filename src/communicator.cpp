@@ -42,8 +42,6 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
-    printf("Try to ask_ans\n");
-    fflush(stdout);
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -65,6 +63,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
             if(index==my_rank)
             {
                 v_index_t x;
+                printf("depth=%d index=%d\n",depth,index);
                 for (int i=0;i<(int)vec.size();++i)
                 {
                     edge=new Edges();
