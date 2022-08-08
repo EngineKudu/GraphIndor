@@ -12,12 +12,13 @@ public:
         last = -1;
         father = nullptr;
     }
-    Embedding(Embedding *fa, int v) //在它的父亲Extendable Embedding中增加一个新的点，即伪代码中的create_extendable_embedding，状态为Pending
+    Embedding(Embedding *fa, int v, int islast) //在它的父亲Extendable Embedding中增加一个新的点，即伪代码中的create_extendable_embedding，状态为Pending
     {
         father = fa;
         size = (fa->size) + 1;
         state = 0;
         last = v;
+        is_last=islast;
         for (int i = 0; i < size - 1; i++)
         {
             list[i] = fa->list[i];

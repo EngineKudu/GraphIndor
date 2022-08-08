@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-long long extend_result;
+long long extend_result=0;
 const int NUM_THREADS=3;
 
 void extend(Embedding *e,std::vector<Embedding*>* vec)
@@ -23,7 +23,7 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
         int cnt = list[0]->e_cnt;
         for (int i = 0; i < cnt; i++)
         {
-            Embedding* ep=new Embedding(e, list[0]->vet[i]);
+            Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt) );
             vec->push_back(ep);
         }
     }
@@ -48,25 +48,35 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
     }
 }
 
-void computation(Embedding *e, Task_Queue* task)
+void computation(Embedding *e, Task_Queue* task,int debug)
 {
     std::vector<Embedding*>* vec=new std::vector<Embedding*>;
-    printf("Hi,compute e:[size=%d,last=%d]\n",e->get_size(),e->get_request());
-    fflush(stdout);
-    e->print_list();
+    if(debug)
+    {
+        printf("Hi,compute e:[size=%d,last=%d]\n",e->get_size(),e->get_request());
+        fflush(stdout);
+        e->print_list();
+    }
     extend(e,vec);
-    printf("extend make %d new embeddings\n",(int)vec->size());
-    fflush(stdout);
+    if(debug)
+    {
+        printf("extend make %d new embeddings\n",(int)vec->size());
+        fflush(stdout);
+    }
     for (int i = 0; i < (int)vec->size(); i++)
     {
-        task->insert(vec->at(i), (e->is_last) && (i + 1 == (int)(vec->size())));
-        printf("INS%d\n", vec->at(i)->get_size());
-        fflush(stdout);
+        Embedding* new_e=vec->at(i);
+        task->insert(new_e, new_e->is_last ,false);
+        if(debug)
+        {
+            printf("INS%d\n", new_e->get_size());
+            fflush(stdout);
+        }
     }
     e->set_state(2);
 }
 
-long long graph_mining(Graph_D* graph)
+long long graph_mining(Graph_D* graph,int debug)
 {
     int K;
     MPI_Comm_rank(MPI_COMM_WORLD, &K);
@@ -74,8 +84,8 @@ long long graph_mining(Graph_D* graph)
     Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
     {
-        Embedding* new_e=new Embedding(task->nul, i);
-        task->insert(new_e, false, true);
+        Embedding* new_e=new Embedding(task->nul, i, (i==graph->range_r));
+        task->insert(new_e, new_e->is_last, true);
     }
     task->current_depth = 1;
     task->current_machine[task->current_depth] = K;
@@ -100,9 +110,9 @@ long long graph_mining(Graph_D* graph)
                     e=task->new_task();
                 if (e->get_size() == 0)
                     break;
-                printf("S%d\n", e->get_size());
+                if(debug) printf("S%d\n", e->get_size());
                 fflush(stdout);
-                computation(e, task);
+                computation(e, task,debug);
             }
             comm->computation_done();
         }

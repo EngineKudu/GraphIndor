@@ -47,7 +47,6 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     while (!all_solved)
     {
-        int cnt=0;
         #pragma omp flush(task)
         int depth = task->current_depth;
         int index = task->commu[depth];
@@ -63,7 +62,7 @@ void Comm::ask_ans(Task_Queue* task)//线程1
             if(index==my_rank)
             {
                 v_index_t x;
-                printf("depth=%d index=%d\n",depth,index);
+                // printf("depth=%d index=%d size=%d\n",depth,index,(int)vec.size());
                 for (int i=0;i<(int)vec.size();++i)
                 {
                     edge=new Edges();
