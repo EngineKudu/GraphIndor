@@ -42,8 +42,9 @@ public:
     Edges* get_edge(int u); //返回u节点的所有边，不存在则返回nullptr
     void print_list();//调试用
     //Edges get_union_list(int *vet); //Todo 返回一个点集的公共邻点列表，使用Vertical computation sharing优化（是否可行未知
+    int is_last;
 private:
-    int state; //state = 0, 1, 2, 3 分别表示Pending, Ready, Zombie, Terminated
+    volatile int state; //state = 0, 1, 2, 3 分别表示Pending, Ready, Zombie, Terminated
     int size;
     int last;
     Edges *list[4]; //pattern_size;

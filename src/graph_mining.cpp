@@ -17,7 +17,6 @@ const int NUM_THREADS=3;
 
 void extend(Embedding *e,std::vector<Embedding*>* vec)
 {
-    extend_result = 0;
     if (e->get_size() == 1)
     {
         Edges **list = e->get_list();
@@ -59,7 +58,11 @@ void computation(Embedding *e, Task_Queue* task)
     printf("extend make %d new embeddings\n",(int)vec->size());
     fflush(stdout);
     for (int i = 0; i < (int)vec->size(); i++)
-        task->insert(vec->at(i));
+    {
+        task->insert(vec->at(i), (e->is_last) && (i + 1 == (int)(vec->size())));
+        printf("INS%d\n", vec->at(i)->get_size());
+        fflush(stdout);
+    }
     e->set_state(2);
 }
 
@@ -72,7 +75,7 @@ long long graph_mining(Graph_D* graph)
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
     {
         Embedding* new_e=new Embedding(task->nul, i);
-        task->insert(new_e, true);
+        task->insert(new_e, false, true);
     }
     task->current_depth = 1;
     task->current_machine[task->current_depth] = K;
@@ -87,7 +90,7 @@ long long graph_mining(Graph_D* graph)
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         //if (my_rank == 0) comm->give_ans(); else 
         if (my_rank == 1) comm->ask_ans(task);
-        else if (my_rank > 1)
+        else if (my_rank == 2)//> 1)
         {
             while (true)
             {
@@ -97,11 +100,15 @@ long long graph_mining(Graph_D* graph)
                     e=task->new_task();
                 if (e->get_size() == 0)
                     break;
+                printf("S%d\n", e->get_size());
+                fflush(stdout);
                 computation(e, task);
             }
             comm->computation_done();
         }
     }
     //Todo: 向其他机器发送结束信号
+    std::cout << "()" << extend_result << std::endl;
+    fflush(stdout);
     return extend_result;
 }
