@@ -11,6 +11,7 @@ public:
         state = 1;
         last = -1;
         father = nullptr;
+        is_last = 0;
     }
     Embedding(Embedding *fa, int v, int islast) //在它的父亲Extendable Embedding中增加一个新的点，即伪代码中的create_extendable_embedding，状态为Pending
     {

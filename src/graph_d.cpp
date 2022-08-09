@@ -27,6 +27,7 @@ void Graph_D::init(Graph* graph)
     }
     vertex[v_cnt]=e_cnt;
     printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
+    printf("e_cnt%lld %lld\n", e_cnt, graph->e_cnt);
     return ;
 }
 

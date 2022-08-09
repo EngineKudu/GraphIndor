@@ -14,16 +14,21 @@
 
 long long extend_result=0;
 const int NUM_THREADS=3;
+int S = 0, SS = 0;
 
 void extend(Embedding *e,std::vector<Embedding*>* vec)
 {
+//    printf("..%d\n", e->get_size());
+//    fflush(stdout);
     if (e->get_size() == 1)
     {
+        S++;
         Edges **list = e->get_list();
         int cnt = list[0]->e_cnt;
         for (int i = 0; i < cnt; i++)
         {
-            Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt) );
+            SS++;
+            Embedding* ep=new Embedding(e, list[0]->vet[i], 0/*(e->is_last)&&(i+1==cnt)*/ );
             vec->push_back(ep);
         }
     }
@@ -66,7 +71,7 @@ void computation(Embedding *e, Task_Queue* task,int debug)
     for (int i = 0; i < (int)vec->size(); i++)
     {
         Embedding* new_e=vec->at(i);
-        task->insert(new_e, new_e->is_last ,false);
+        task->insert(new_e, new_e->is_last , (i + 1) == (int)(vec->size()));
         if(debug)
         {
             printf("INS%d\n", new_e->get_size());
@@ -85,9 +90,11 @@ long long graph_mining(Graph_D* graph,int debug)
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
     {
         Embedding* new_e=new Embedding(task->nul, i, (i==graph->range_r));
-        task->insert(new_e, new_e->is_last, true);
+        task->insert(new_e, new_e->is_last, i == (graph->range_r));
     }
     task->current_depth = 1;
+        printf("%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
+        fflush(stdout);
     task->current_machine[task->current_depth] = K;
     task->commu[task->current_depth] = K;
     #pragma omp parallel num_threads(NUM_THREADS) shared(task)
@@ -119,6 +126,15 @@ long long graph_mining(Graph_D* graph,int debug)
     }
     //Todo: 向其他机器发送结束信号
     std::cout << "()" << extend_result << std::endl;
+    int SSS = 0;
+    Edges* e;
+    for (int i = 0; i < 7115; i++)
+    {
+        e = new Edges();
+        graph->get_neighbor(i, e);
+        SSS += e->e_cnt;
+    }
+    printf("%d %d %d\n", S, SS, SSS);
     fflush(stdout);
     return extend_result;
 }

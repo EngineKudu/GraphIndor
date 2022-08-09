@@ -6,13 +6,20 @@
 #include <iostream>
 
 //Todo: 多线程
-void Task_Queue::insert(Embedding* new_e, bool is_last, bool is_root)
+void Task_Queue::insert(Embedding* new_e, bool is_last, bool is_end)
 {
+    //printf("...%d %d\n", new_e->get_size(), current_depth);
+    //fflush(stdout);
     q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
     size[current_depth + 1]++;
     //printf("Ins::%d %d %d\n",new_e->get_request(),is_last,is_root);
     //fflush(stdout);
-    if (is_last || (is_root && size[current_depth + 1] >= Max_size))
+    /*if (is_last)
+    {
+        printf("wow!\n");
+        fflush(stdout);
+    }*/
+    if (is_last || (is_end && size[current_depth + 1] >= Max_size))
     {
         current_depth++;
         int N = graph->get_machine_cnt(); //Todo: 机器数量
@@ -67,6 +74,8 @@ Embedding* Task_Queue::new_task()
                 //printf("^^^\n");
                 //fflush(stdout);
                 new_t->is_last = true;
+                /*printf("%d %d %d&*&(*\n", size[current_depth], size[current_depth + 1], current_depth);
+                fflush(stdout);*/
             }
             break;
         }
