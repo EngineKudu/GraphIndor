@@ -26,8 +26,8 @@ int main(int argc,char *argv[]) {
     auto t1 = system_clock::now();
 
     bool ok;
-//    ok = D.load_data(g, MiCo, argv[1],0,0);
-    ok = D.fast_load(g, argv[1]);
+    ok = D.load_data(g, MiCo, argv[1],0,0);
+//    ok = D.fast_load(g, argv[1]);
 
     if (!ok) {
         printf("data load failure :-(\n");
@@ -71,7 +71,7 @@ int main(int argc,char *argv[]) {
     double count_t1 = get_wall_time();
     int thread_count = 24;
     //long long ans = g->pattern_matching(schedule_iep, thread_count);
-    long long ans=graph_mining(g_d,0);
+    long long ans=graph_mining(g_d,1);
     double count_t2 = get_wall_time();
     printf("couting time= %.6lf s\n", count_t2 - count_t1);
     printf("ans=%lld\n", ans);

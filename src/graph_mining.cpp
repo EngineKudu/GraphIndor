@@ -13,8 +13,26 @@
 #include <stdio.h>
 
 long long extend_result=0;
-const int NUM_THREADS=3;
+const int NUM_THREADS=4;
 int S = 0, SS = 0;
+static omp_lock_t lock;
+
+v_index_t get_union(e_index_t len1,e_index_t len2,v_index_t* t1,v_index_t* t2)
+{
+    int h1=0,h2=0;
+    v_index_t ans=0;
+    while( (h1<len1)&&(h2<len2) )
+    {
+        if(t1[h1]<t2[h2]) ++h1;
+        else if(t1[h1]>t2[h2]) ++h2;
+        else
+        {
+            ++h1,++h2;
+            ans++;
+        }
+    }
+    return ans;
+}
 
 void extend(Embedding *e,std::vector<Embedding*>* vec)
 {
@@ -28,7 +46,7 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
         for (int i = 0; i < cnt; i++)
         {
             SS++;
-            Embedding* ep=new Embedding(e, list[0]->vet[i], 0/*(e->is_last)&&(i+1==cnt)*/ );
+            Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt));
             vec->push_back(ep);
         }
     }
@@ -37,19 +55,9 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
         Edges **list = e->get_list();
         int cnt1 = list[0]->e_cnt;
         int cnt2 = list[1]->e_cnt;
-        for (int i = 0; i < cnt1; i++)
-        {
-            bool flag = false;
-            for (int j = 0; j < cnt2; j++)
-            {
-                if ((list[0]->vet[i]) == (list[1]->vet[j]))
-                {
-                    flag = true;
-                }
-            }
-            if (flag)
-                extend_result++; //计数
-        }
+        v_index_t new_ans=get_union(cnt1,cnt2,list[0]->vet,list[1]->vet);
+        #pragma omp atomic
+            extend_result+=new_ans;
     }
 }
 
@@ -68,16 +76,19 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         printf("extend make %d new embeddings\n",(int)vec->size());
         fflush(stdout);
     }
+    omp_set_lock(&lock);
     for (int i = 0; i < (int)vec->size(); i++)
     {
         Embedding* new_e=vec->at(i);
-        task->insert(new_e, new_e->is_last , (i + 1) == (int)(vec->size()));
+        #pragma omp critical
+            task->insert(new_e, new_e->is_last , (i + 1) == (int)(vec->size()));
         if(debug)
         {
             printf("INS%d\n", new_e->get_size());
             fflush(stdout);
         }
     }
+    omp_unset_lock(&lock);
     e->set_state(2);
 }
 
@@ -93,10 +104,11 @@ long long graph_mining(Graph_D* graph,int debug)
         task->insert(new_e, new_e->is_last, i == (graph->range_r));
     }
     task->current_depth = 1;
-        printf("%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
-        fflush(stdout);
+    printf("%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
+    fflush(stdout);
     task->current_machine[task->current_depth] = K;
     task->commu[task->current_depth] = K;
+    omp_init_lock(&lock);
     #pragma omp parallel num_threads(NUM_THREADS) shared(task)
     {
         int my_rank = omp_get_thread_num();
@@ -107,17 +119,18 @@ long long graph_mining(Graph_D* graph,int debug)
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         //if (my_rank == 0) comm->give_ans(); else 
         if (my_rank == 1) comm->ask_ans(task);
-        else if (my_rank == 2)//> 1)
+        else if (my_rank > 1)//> 1)
         {
             while (true)
             {
                 #pragma omp flush(task)
                 Embedding* e;
-                #pragma omp critical
-                    e=task->new_task();
+                omp_set_lock(&lock);
+                e=task->new_task();
+                omp_unset_lock(&lock);
                 if (e->get_size() == 0)
                     break;
-                if(debug) printf("S%d\n", e->get_size());
+                if(debug) printf("S%d %d\n", e->get_size(),e->get_request());
                 fflush(stdout);
                 computation(e, task,debug);
             }
@@ -126,6 +139,8 @@ long long graph_mining(Graph_D* graph,int debug)
     }
     //Todo: 向其他机器发送结束信号
     std::cout << "()" << extend_result << std::endl;
+    omp_destroy_lock(&lock);
+/*
     int SSS = 0;
     Edges* e;
     for (int i = 0; i < 7115; i++)
@@ -136,5 +151,6 @@ long long graph_mining(Graph_D* graph,int debug)
     }
     printf("%d %d %d\n", S, SS, SSS);
     fflush(stdout);
+*/
     return extend_result;
 }

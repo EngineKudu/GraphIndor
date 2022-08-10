@@ -8,8 +8,8 @@
 //Todo: 多线程
 void Task_Queue::insert(Embedding* new_e, bool is_last, bool is_end)
 {
-    //printf("...%d %d\n", new_e->get_size(), current_depth);
-    //fflush(stdout);
+//    printf("...%d %d %d\n", new_e->get_size(), new_e->get_request(),current_depth);
+//    fflush(stdout);
     q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
     size[current_depth + 1]++;
     //printf("Ins::%d %d %d\n",new_e->get_request(),is_last,is_root);
