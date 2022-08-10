@@ -16,16 +16,18 @@ void Graph_D::init(Graph* graph)
     range_l=block_size*my_rank;
     range_r=std::min(block_size*(my_rank+1)-1,G->v_cnt-1);
     v_cnt=0,e_cnt=0;
-    vertex=new e_index_t[range_r-range_l+1];
+    vertex=new e_index_t[range_r-range_l+2];
     edge=new v_index_t[ G->vertex[range_r+1]-G->vertex[range_l] ];
     for (v_index_t i=range_l;i<=range_r;++i)
     {
         vertex[v_cnt]=G->vertex[i];
         for (e_index_t j=G->vertex[i];j<G->vertex[i+1];++j)
-            edge[++e_cnt]=G->edge[j];
+            edge[e_cnt++]=G->edge[j];
         v_cnt++;
     }
+    vertex[v_cnt]=e_cnt;
     printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
+    printf("e_cnt%lld %lld\n", e_cnt, graph->e_cnt);
     return ;
 }
 

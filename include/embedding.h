@@ -11,13 +11,15 @@ public:
         state = 1;
         last = -1;
         father = nullptr;
+        is_last = 0;
     }
-    Embedding(Embedding *fa, int v) //在它的父亲Extendable Embedding中增加一个新的点，即伪代码中的create_extendable_embedding，状态为Pending
+    Embedding(Embedding *fa, int v, int islast) //在它的父亲Extendable Embedding中增加一个新的点，即伪代码中的create_extendable_embedding，状态为Pending
     {
         father = fa;
         size = (fa->size) + 1;
         state = 0;
         last = v;
+        is_last=islast;
         for (int i = 0; i < size - 1; i++)
         {
             list[i] = fa->list[i];
@@ -40,9 +42,11 @@ public:
     Embedding* get_father();
     Edges **get_list(); //返回活动边列表的指针数组
     Edges* get_edge(int u); //返回u节点的所有边，不存在则返回nullptr
+    void print_list();//调试用
     //Edges get_union_list(int *vet); //Todo 返回一个点集的公共邻点列表，使用Vertical computation sharing优化（是否可行未知
+    int is_last;
 private:
-    int state; //state = 0, 1, 2, 3 分别表示Pending, Ready, Zombie, Terminated
+    volatile int state; //state = 0, 1, 2, 3 分别表示Pending, Ready, Zombie, Terminated
     int size;
     int last;
     Edges *list[4]; //pattern_size;

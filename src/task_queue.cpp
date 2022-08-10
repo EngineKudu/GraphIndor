@@ -6,11 +6,20 @@
 #include <iostream>
 
 //Todo: 多线程
-void Task_Queue::insert(Embedding* new_e, bool is_root)
+void Task_Queue::insert(Embedding* new_e, bool is_last, bool is_end)
 {
+//    printf("...%d %d %d\n", new_e->get_size(), new_e->get_request(),current_depth);
+//    fflush(stdout);
     q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
     size[current_depth + 1]++;
-    if (is_root && size[current_depth + 1] >= Max_size)
+    //printf("Ins::%d %d %d\n",new_e->get_request(),is_last,is_root);
+    //fflush(stdout);
+    /*if (is_last)
+    {
+        printf("wow!\n");
+        fflush(stdout);
+    }*/
+    if (is_last || (is_end && size[current_depth + 1] >= Max_size))
     {
         current_depth++;
         int N = graph->get_machine_cnt(); //Todo: 机器数量
@@ -31,40 +40,52 @@ Embedding* Task_Queue::new_task()
 {
     int N = graph->get_machine_cnt(); 
     int K = graph->get_machine_id();
-    Embedding* new_t =nul;
+    Embedding* new_t = nul;
     while (current_depth >= 1)
     {
-        printf("![%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+        //printf("![%d %d %d]\n", K, current_depth, current_machine[current_depth]);
         while (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N != K)
         {
             (current_machine[current_depth] += 1) %= N;
         }
-        printf("[%d %d %d]\n", K, current_depth, current_machine[current_depth]);
-        printf("{%d %d}\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size());
-        fflush(stdout);
+        //printf("[%d %d %d]\n", K, current_depth, current_machine[current_depth]);
+        //printf("{%d %d}\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size());
+        //fflush(stdout);
         if (index[current_depth][current_machine[current_depth]] < (int)q[current_depth][current_machine[current_depth]].size())
         {
             //return &nul;
-            printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
-            fflush(stdout);
+            //printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
+            //fflush(stdout);
             Embedding* e = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
             while (true)
             {
-                #pragma omp flush(e)
-                {
-                    if (e->get_state() == 1)
-                        break;
-                }
+                if (e->get_state() == 1)
+                    break;
             }
-            printf("True\n");
-            fflush(stdout);
+            //printf("True\n");
+            //fflush(stdout);
+            size[current_depth]--;
             new_t = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
+            index[current_depth][current_machine[current_depth]]++;
+            //printf("INDEX%d %d %d %d\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size(), (current_machine[current_depth] + 1) % N, K);
+            //fflush(stdout);
+            if (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N == K)
+            {
+                //printf("^^^\n");
+                //fflush(stdout);
+                new_t->is_last = true;
+                /*printf("%d %d %d&*&(*\n", size[current_depth], size[current_depth + 1], current_depth);
+                fflush(stdout);*/
+            }
             break;
         }
         for (int i = 0; i < N; i++)
         {
             q[current_depth][i].clear();
         }
+        //printf("go up\n");
+        //fflush(stdout);
+        assert(size[current_depth] == 0);
         current_depth--;
     }
     return new_t;

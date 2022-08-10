@@ -48,3 +48,12 @@ Edges* Embedding::get_edge(int u)
     }
     return nullptr;
 }
+
+void Embedding::print_list()
+{
+    printf("Edge_list=[");
+    for (int i=0;i<list[0]->e_cnt;++i)
+        printf("%d,",list[0]->vet[i]);
+    printf("]\n");
+    fflush(stdout);
+}

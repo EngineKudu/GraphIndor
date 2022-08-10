@@ -7,7 +7,8 @@
 
 void Comm::give_ans() //线程0-回复其他机器的询问
 {
-    std::cout<<"Try to give_ans"<<std::endl<<std::flush;
+    printf("Try to give_ans\n");
+    fflush(stdout);
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -41,14 +42,11 @@ void Comm::give_ans() //线程0-回复其他机器的询问
 
 void Comm::ask_ans(Task_Queue* task)//线程1
 {
-    printf("Try to ask_ans\n");
-    fflush(stdout);
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     while (!all_solved)
     {
-        int cnt=0;
         #pragma omp flush(task)
         int depth = task->current_depth;
         int index = task->commu[depth];
@@ -64,14 +62,14 @@ void Comm::ask_ans(Task_Queue* task)//线程1
             if(index==my_rank)
             {
                 v_index_t x;
+                // printf("depth=%d index=%d size=%d\n",depth,index,(int)vec.size());
                 for (int i=0;i<(int)vec.size();++i)
                 {
                     edge=new Edges();
-                    x=vec[i]->get_request();
-                    //一运行下面这句就报错，sent by the kernel at address(nil)
+                    x=vec[i]->get_request(); 
                     graph->get_neighbor(x,edge);
                     vec[i]->add_edge(edge);
-                    printf("V%d %d %d %d\n", my_rank, depth, index, i);
+//                  printf("V%d %d %d %d\n", my_rank, depth, index, i);
                 }
             }
             else
@@ -79,11 +77,16 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 printf("BEGIN\n");
                 fflush(stdout);
                 int size=vec.size();
+                printf("size====%d\n",size);
+                fflush(stdout);
+                
                 MPI_Status status;
                 for (int i=0;i<size;++i)
                 {
                     int x=vec[i]->get_request();
                     MPI_Send(&x,1,MPI_INT,index,x,MPI_COMM_WORLD);
+                    printf("Send %d\n",x);
+                    fflush(stdout);
                 }
                 for (int i=0;i<size;++i)
                 {
