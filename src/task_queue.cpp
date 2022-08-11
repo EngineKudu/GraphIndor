@@ -12,7 +12,7 @@ void Task_Queue::insert(Embedding* new_e, bool is_last, bool is_end)
 //    fflush(stdout);
     q[current_depth + 1][graph->get_block_index(new_e->get_request())].push_back(new_e);
     size[current_depth + 1]++;
-    //printf("Ins::%d %d %d\n",new_e->get_request(),is_last,is_root);
+    //printf("Ins::%d %d %d\n",graph->range_l, current_depth+ 1,graph->get_block_index(new_e->get_request()));
     //fflush(stdout);
     /*if (is_last)
     {
@@ -57,13 +57,10 @@ Embedding* Task_Queue::new_task()
             //printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
             //fflush(stdout);
             Embedding* e = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
-            while (true)
-            {
-                if (e->get_state() == 1)
-                    break;
+            while (1)
+            {   
+                if(e->get_state()==1) break;
             }
-            //printf("True\n");
-            //fflush(stdout);
             size[current_depth]--;
             new_t = q[current_depth][current_machine[current_depth]][index[current_depth][current_machine[current_depth]]];
             index[current_depth][current_machine[current_depth]]++;

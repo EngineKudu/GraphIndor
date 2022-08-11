@@ -12,7 +12,7 @@ typedef std::pair<v_index_t,v_index_t> pii ;
 class Graph_D
 {
 public:
-    v_index_t v_cnt,block_size; // number of vertex(this part)
+    v_index_t v_cnt,block_size,all_vertex; // number of vertex(this part)
     e_index_t e_cnt; // number of edge(this part)
     v_index_t range_l,range_r;
 

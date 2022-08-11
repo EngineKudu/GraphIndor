@@ -13,6 +13,7 @@ void Graph_D::init(Graph* graph)
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Barrier(MPI_COMM_WORLD);
     block_size=(G->v_cnt + comm_sz - 1) / comm_sz;
+    all_vertex=G->v_cnt;
     range_l=block_size*my_rank;
     range_r=std::min(block_size*(my_rank+1)-1,G->v_cnt-1);
     v_cnt=0,e_cnt=0;
@@ -21,13 +22,14 @@ void Graph_D::init(Graph* graph)
     for (v_index_t i=range_l;i<=range_r;++i)
     {
         vertex[v_cnt]=G->vertex[i];
+        if(range_l!=0) vertex[v_cnt]-=G->vertex[ range_l ];
         for (e_index_t j=G->vertex[i];j<G->vertex[i+1];++j)
             edge[e_cnt++]=G->edge[j];
         v_cnt++;
     }
     vertex[v_cnt]=e_cnt;
     printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
-    printf("e_cnt%lld %lld\n", e_cnt, graph->e_cnt);
+    printf("e_cnt%lu %lu\n", e_cnt, graph->e_cnt);
     return ;
 }
 
