@@ -12,18 +12,20 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    int* ask;//应为v_index_t
+    int** ask;//应为v_index_t
     MPI_Request* recv_r;
     Edges** e;
     MPI_Status status;
     int flag=0;
-    ask=new int[comm_sz+1];
+    ask=new int*[comm_sz+1];
     recv_r=new MPI_Request[comm_sz+1];
     e=new Edges*[comm_sz+1];
     for (int i=0;i<comm_sz;++i)
     {
         if(i==my_rank) continue;
-        MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
+        ask[i]=new int[ max_degree ];
+        MPI_Irecv(ask[i],max_degree,MPI_INT,i,graph->all_vertex+i,MPI_COMM_WORLD,&recv_r[i]);
+        e[i]=new Edges();
     }
     while(!all_solved)
     {
@@ -32,9 +34,20 @@ void Comm::give_ans() //线程0-回复其他机器的询问
             if(i==my_rank) continue;
             MPI_Test(&recv_r[i],&flag,&status);
             if(flag==0) continue;
-            graph->get_neighbor(ask[i],e[i]);
-            MPI_Send(e[i]->vet,e[i]->e_cnt,MPI_INT,i,ask[i],MPI_COMM_WORLD);
-            MPI_Irecv(&ask[i],1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD,&recv_r[i]);
+//            printf("Machine %d respond Machine%d:%d\n",my_rank,i,ask[i]);
+  //          fflush(stdout);
+            int ask_cnt;
+            MPI_Get_count(&status,MPI_INT,&ask_cnt);
+            for (int j=0;j<ask_cnt;++j)
+            {
+                printf("machine %d Respond machine %d,size=%d\n",my_rank,i,ask_cnt);
+                fflush(stdout);
+                graph->get_neighbor(ask[i][j],e[i]);
+                printf("Send_size=%lu\n",e[i]->e_cnt);
+                fflush(stdout);
+                MPI_Send(e[i]->vet,e[i]->e_cnt,MPI_INT,i,ask[i][j],MPI_COMM_WORLD);
+            }
+            MPI_Irecv(ask[i],max_degree,MPI_INT,i,graph->all_vertex+i,MPI_COMM_WORLD,&recv_r[i]);
             //TODO：改为Isend，但要检查一下上次的有没有发出
         }
     }
@@ -74,34 +87,43 @@ void Comm::ask_ans(Task_Queue* task)//线程1
             }
             else
             {
+                int size=vec.size();
+                if(size==0) continue;
                 printf("BEGIN\n");
                 fflush(stdout);
-                int size=vec.size();
-                printf("size====%d\n",size);
+                printf("size====[%d,%d,%d]\n",depth,index,size);
                 fflush(stdout);
                 
                 MPI_Status status;
+                int ask_size=0;
                 for (int i=0;i<size;++i)
                 {
                     int x=vec[i]->get_request();
-                    MPI_Send(&x,1,MPI_INT,index,x,MPI_COMM_WORLD);
-                    printf("Send %d\n",x);
-                    fflush(stdout);
+                    ask_buffer[ask_size++]=x;
                 }
+                MPI_Send(&ask_buffer,ask_size,MPI_INT,index,graph->all_vertex+my_rank,MPI_COMM_WORLD);
+                printf("machine %d ask:size=%d\n",my_rank,ask_size);
+                fflush(stdout);
                 for (int i=0;i<size;++i)
                 {
-                    MPI_Recv(buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
+                    MPI_Recv(recv_buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
                     Edges* edge=new Edges();
                     edge->v=vec[i]->get_request();
                     int cnt=0;
                     MPI_Get_count(&status,MPI_INT,&cnt);
+                    printf("Recv %u:size=%d\n[",edge->v,cnt);
+                    fflush(stdout);
                     edge->e_cnt=cnt;
                     edge->vet=new v_index_t[edge->e_cnt];
                     for (int j=0;j<edge->e_cnt;++j)
-                        edge->vet[j]=buffer[j];
+                        edge->vet[j]=recv_buffer[j];
+                    for (int j=0;j<edge->e_cnt;++j)
+                        printf("%u,",edge->vet[j]);
+                    printf("]\n");
+                    fflush(stdout);
                     vec[i]->add_edge(edge);
                 }
-                printf("End");
+                printf("End\n");
                 fflush(stdout);
             }
             task->is_commued[depth][index] = 1;

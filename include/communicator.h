@@ -14,7 +14,8 @@ const int buffer_size=100000;
 class Comm
 {
 public:
-    v_index_t* buffer;
+    v_index_t* ask_buffer;
+    v_index_t* recv_buffer;
     bool all_solved;
     e_index_t max_degree;
     Graph_D* graph;
@@ -23,12 +24,15 @@ public:
     {
         graph=G;
         all_solved=0;
-        buffer=new v_index_t[buffer_size];
+        ask_buffer=new v_index_t[buffer_size];
+        recv_buffer=new v_index_t[buffer_size];
+        max_degree=buffer_size;
     }
 
     ~Comm() 
     {
-        if(buffer != nullptr) delete[] buffer;
+        if(ask_buffer != nullptr) delete[] ask_buffer;
+        if(recv_buffer != nullptr) delete[] recv_buffer;
     }
 
     void give_ans(); //线程0
