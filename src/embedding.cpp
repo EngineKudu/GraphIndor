@@ -3,7 +3,10 @@
 
 int Embedding::get_state()
 {
-    return state;
+    int x;
+    #pragma omp atomic write
+        x=state;
+    return x;
 }
 
 int Embedding::get_size()
@@ -24,7 +27,8 @@ int Embedding::get_request()
 void Embedding::add_edge(Edges* edge)
 {
     list[size - 1] =edge;
-    state = 1;
+    #pragma omp atomic write
+        state = 1;
 }
 
 Embedding* Embedding::get_father()

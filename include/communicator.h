@@ -14,8 +14,8 @@ const int buffer_size=100000;
 class Comm
 {
 public:
-    v_index_t* ask_buffer;
-    v_index_t* recv_buffer;
+    int* ask_buffer;
+    int* recv_buffer;
     bool all_solved;
     e_index_t max_degree;
     Graph_D* graph;
@@ -24,8 +24,8 @@ public:
     {
         graph=G;
         all_solved=0;
-        ask_buffer=new v_index_t[buffer_size];
-        recv_buffer=new v_index_t[buffer_size];
+        ask_buffer=new int[buffer_size];
+        recv_buffer=new int[buffer_size];
         max_degree=buffer_size;
     }
 

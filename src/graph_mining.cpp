@@ -83,8 +83,9 @@ void computation(Embedding *e, Task_Queue* task,int debug)
 
 long long graph_mining(Graph_D* graph,int debug)
 {
-    int K;
+    int K,N;
     MPI_Comm_rank(MPI_COMM_WORLD, &K);
+    MPI_Comm_size(MPI_COMM_WORLD, &N);
     Comm* comm=new Comm(graph);
     Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
@@ -128,14 +129,21 @@ long long graph_mining(Graph_D* graph,int debug)
                 }
                 computation(e, task,debug);
             }
-            std::cout << "()" << extend_result << std::endl;
             MPI_Barrier(MPI_COMM_WORLD);
-            
             comm->computation_done();
         }
     }
-    //Todo: 向其他机器发送结束信号
-    std::cout << "()" << extend_result << std::endl;
+    if(K==0)
+    {
+        for (int i=1;i<N;++i)
+        {
+            long long ans;
+            MPI_Recv(&ans,1,MPI_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            extend_result+=ans;
+        }
+    }
+    else
+        MPI_Send(&extend_result,1,MPI_LONG,0,0,MPI_COMM_WORLD);
     omp_destroy_lock(&lock);
     return extend_result;
 }

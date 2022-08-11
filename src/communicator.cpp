@@ -12,7 +12,7 @@ void Comm::give_ans() //线程0-回复其他机器的询问
     int comm_sz,my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    int** ask;//应为v_index_t
+    int** ask;
     MPI_Request* recv_r;
     Edges** e;
     MPI_Status status;
@@ -38,13 +38,15 @@ void Comm::give_ans() //线程0-回复其他机器的询问
   //          fflush(stdout);
             int ask_cnt;
             MPI_Get_count(&status,MPI_INT,&ask_cnt);
+            //printf("machine %d Respond machine %d,size=%d\n",my_rank,i,ask_cnt);
+            //fflush(stdout);
             for (int j=0;j<ask_cnt;++j)
             {
-                printf("machine %d Respond machine %d,size=%d\n",my_rank,i,ask_cnt);
-                fflush(stdout);
+                //printf("ask[%d][%d]=%d\n",i,j,ask[j]);
+                //fflush(stdout);
                 graph->get_neighbor(ask[i][j],e[i]);
-                printf("Send_size=%lu\n",e[i]->e_cnt);
-                fflush(stdout);
+                //printf("Send_size=%lu\n",e[i]->e_cnt);
+                //fflush(stdout);
                 MPI_Send(e[i]->vet,e[i]->e_cnt,MPI_INT,i,ask[i][j],MPI_COMM_WORLD);
             }
             MPI_Irecv(ask[i],max_degree,MPI_INT,i,graph->all_vertex+i,MPI_COMM_WORLD,&recv_r[i]);
@@ -89,11 +91,13 @@ void Comm::ask_ans(Task_Queue* task)//线程1
             {
                 int size=vec.size();
                 if(size==0) continue;
+                /*
                 printf("BEGIN\n");
                 fflush(stdout);
                 printf("size====[%d,%d,%d]\n",depth,index,size);
                 fflush(stdout);
-                
+                */
+
                 MPI_Status status;
                 int ask_size=0;
                 for (int i=0;i<size;++i)
@@ -101,9 +105,14 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                     int x=vec[i]->get_request();
                     ask_buffer[ask_size++]=x;
                 }
-                MPI_Send(&ask_buffer,ask_size,MPI_INT,index,graph->all_vertex+my_rank,MPI_COMM_WORLD);
+                MPI_Send(ask_buffer,ask_size,MPI_INT,index,graph->all_vertex+my_rank,MPI_COMM_WORLD);
+                /*
                 printf("machine %d ask:size=%d\n",my_rank,ask_size);
                 fflush(stdout);
+                for (int i=0;i<size;++i)
+                    printf("[%d]",ask_buffer[i]);
+                fflush(stdout);
+                */
                 for (int i=0;i<size;++i)
                 {
                     MPI_Recv(recv_buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
@@ -111,20 +120,23 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                     edge->v=vec[i]->get_request();
                     int cnt=0;
                     MPI_Get_count(&status,MPI_INT,&cnt);
-                    printf("Recv %u:size=%d\n[",edge->v,cnt);
-                    fflush(stdout);
                     edge->e_cnt=cnt;
                     edge->vet=new v_index_t[edge->e_cnt];
                     for (int j=0;j<edge->e_cnt;++j)
                         edge->vet[j]=recv_buffer[j];
+                    vec[i]->add_edge(edge);
+                    /*
+                    printf("Recv %u:size=%d\n[",edge->v,cnt);
+                    fflush(stdout);
+                    
                     for (int j=0;j<edge->e_cnt;++j)
                         printf("%u,",edge->vet[j]);
                     printf("]\n");
                     fflush(stdout);
-                    vec[i]->add_edge(edge);
+                    */
                 }
-                printf("End\n");
-                fflush(stdout);
+                //printf("End\n");
+                //fflush(stdout);
             }
             task->is_commued[depth][index] = 1;
         }
