@@ -46,7 +46,7 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
         for (int i = 0; i < cnt; i++)
         {
             SS++;
-            Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt));
+            Embedding* ep=new Embedding(e, list[0]->vet[i], 0/*(e->is_last)&&(i+1==cnt)*/);
             vec->push_back(ep);
         }
     }
@@ -81,7 +81,7 @@ void computation(Embedding *e, Task_Queue* task,int debug)
     {
         Embedding* new_e=vec->at(i);
         #pragma omp critical
-            task->insert(new_e, new_e->is_last , (i + 1) == (int)(vec->size()));
+            task->insert(new_e, (e->is_last) && ((i + 1) == (int)(vec->size())) , (i + 1) == (int)(vec->size()));
         if(debug)
         {
             printf("INS%d\n", new_e->get_size());

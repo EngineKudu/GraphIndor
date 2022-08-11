@@ -1,6 +1,7 @@
 #pragma once
 #include "graph_d.h"
 #include "embedding.h"
+#include <omp.h>
 #include <cstring>
 #include <vector>
 #include <algorithm>
@@ -15,6 +16,8 @@ public:
     {
         graph = G;
         current_depth = 0;
+        count = 0;
+        omp_init_lock(lock);
         current_machine = new volatile int[pattern_size];
         size = new volatile int[pattern_size];
         commu = new int[pattern_size];
@@ -35,6 +38,7 @@ public:
     }
     ~Task_Queue()
     {
+        omp_destroy_lock(lock);
         if (current_machine != nullptr) delete[] current_machine;
         if (size != nullptr) delete[] size;
         if (commu != nullptr) delete[] commu;
@@ -62,4 +66,6 @@ public:
     Embedding* nul;
     void insert(Embedding* new_e, bool is_last, bool is_root = false);//加入一个embedding
     Embedding* new_task();//获取一个新任务,层数与embedding的size相同
+    volatile int count;//同时insert且此时需要向下拓一层的进程数
+    omp_lock_t *lock;
 };

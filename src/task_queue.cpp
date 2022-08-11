@@ -69,10 +69,8 @@ Embedding* Task_Queue::new_task()
             index[current_depth][current_machine[current_depth]]++;
             //printf("INDEX%d %d %d %d\n", index[current_depth][current_machine[current_depth]], (int)q[current_depth][current_machine[current_depth]].size(), (current_machine[current_depth] + 1) % N, K);
             //fflush(stdout);
-            if (index[current_depth][current_machine[current_depth]] == (int)q[current_depth][current_machine[current_depth]].size() && (current_machine[current_depth] + 1) % N == K)
+            if (size[current_depth] == 0)
             {
-                //printf("^^^\n");
-                //fflush(stdout);
                 new_t->is_last = true;
                 /*printf("%d %d %d&*&(*\n", size[current_depth], size[current_depth + 1], current_depth);
                 fflush(stdout);*/
