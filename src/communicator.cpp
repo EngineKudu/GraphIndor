@@ -62,18 +62,30 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     while (!all_solved)
     {
+        //printf("Pending\n");
+        //fflush(stdout);
+//        omp_set_lock(&(task->lock_cc));
         #pragma omp flush(task)
+//        omp_set_lock(lock);
         int depth = task->current_depth;
         int index = task->commu[depth];
+//        omp_unset_lock(lock);
         (task->commu[depth] += 1) %= comm_sz;
+//        omp_unset_lock(&(task->lock_cc));
+        //printf("OK %d %d\n", depth, index);
+        fflush(stdout);
         if (depth == 0)
         {
             break;
         }
         std::vector<Embedding*>& vec=task->q[depth][index];
         Edges* edge;
+        //printf("C1 %d %d\n", depth, index);
+        fflush(stdout);
         if (! task->is_commued[depth][index])
         {
+            //printf("C2 %d %d\n", depth, index);
+            fflush(stdout);
             if(index==my_rank)
             {
                 v_index_t x;

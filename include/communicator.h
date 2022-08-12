@@ -19,14 +19,17 @@ public:
     bool all_solved;
     e_index_t max_degree;
     Graph_D* graph;
+    omp_lock_t* lock;
+    
 
-    Comm(Graph_D* G) 
+    Comm(Graph_D* G, omp_lock_t *loc) 
     {
         graph=G;
         all_solved=0;
         ask_buffer=new int[buffer_size];
         recv_buffer=new int[buffer_size];
         max_degree=buffer_size;
+        lock = loc;
     }
 
     ~Comm() 

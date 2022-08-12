@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 long long extend_result=0;
-const int NUM_THREADS=3;
+const int NUM_THREADS=4;
 int S = 0, SS = 0;
 static omp_lock_t lock;
 
@@ -70,13 +70,23 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         fflush(stdout);
         e->print_list();
     }
+    printf("begin%d\n", omp_get_thread_num());
+    fflush(stdout);
     extend(e,vec);
+    printf("end\n");
+    fflush(stdout);
     if(debug)
     {
         printf("extend make %d new embeddings\n",(int)vec->size());
         fflush(stdout);
     }
+    //            printf("XXX\n");
+    //            fflush(stdout);
     omp_set_lock(&lock);
+//    task->nex++;
+    bool ff = task->insert_vec(e, vec);
+    task->nex--;
+    /*
     for (int i = 0; i < (int)vec->size(); i++)
     {
         Embedding* new_e=vec->at(i);
@@ -87,17 +97,50 @@ void computation(Embedding *e, Task_Queue* task,int debug)
             printf("INS%d\n", new_e->get_size());
             fflush(stdout);
         }
-    }
+    }*/
     omp_unset_lock(&lock);
+    printf("Now%d %d\n", omp_get_thread_num(), task->nex);
+    fflush(stdout);
+    if (task->nex)
+    {
+        while (task->ext == true){/*printf("???\n");fflush(stdout);*/}
+    }
+    else
+    {
+        if (ff == true)
+        {
+            task->ext = true;
+            while (task->nex != 0){printf("wait\n");fflush(stdout);};
+            omp_set_lock(&lock);
+            printf("DOWN!!!!!\n");
+            fflush(stdout);
+            task->current_depth++;
+            int N = task->graph->get_machine_cnt(); //Todo: 机器数量
+            int K = task->graph->get_machine_id(); //Todo: 当前机器的编号
+            task->current_machine[task->current_depth] = K;
+            task->commu[task->current_depth] = K;
+            task->size[task->current_depth + 1] = 0;
+            for (int i = 0; i < N; i++)
+            {
+                task->index[task->current_depth][i] = 0;
+                task->is_commued[task->current_depth][i] = 0;
+            }
+            omp_unset_lock(&lock);
+            task->ext = false;
+        }
+    }
     e->set_state(2);
 }
 
 long long graph_mining(Graph_D* graph,int debug)
 {
+    omp_init_lock(&lock);
+    printf("???\n");
+    fflush(stdout);
     int K,N;
     MPI_Comm_rank(MPI_COMM_WORLD, &K);
     MPI_Comm_size(MPI_COMM_WORLD, &N);
-    Comm* comm=new Comm(graph);
+    Comm* comm=new Comm(graph, &lock);
     Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
     {
@@ -105,11 +148,11 @@ long long graph_mining(Graph_D* graph,int debug)
         task->insert(new_e, new_e->is_last, i == (graph->range_r));
     }
     task->current_depth = 1;
-    printf("%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
+    printf("X%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
     fflush(stdout);
     task->current_machine[task->current_depth] = K;
     task->commu[task->current_depth] = K;
-    omp_init_lock(&lock);
+//    omp_init_lock(&lock_cc);
     #pragma omp parallel num_threads(NUM_THREADS) shared(task)
     {
         int my_rank = omp_get_thread_num();
@@ -127,18 +170,85 @@ long long graph_mining(Graph_D* graph,int debug)
                 #pragma omp flush(task)
                 Embedding* e;
                 omp_set_lock(&lock);
+                task->nex++;
+                printf("Add%d %d\n", omp_get_thread_num(), task->nex);
+                fflush(stdout);
+                printf("lock%d\n", omp_get_thread_num());
+                fflush(stdout);
                 e=task->new_task();
+                printf("unlock%d\n", omp_get_thread_num());
+                fflush(stdout);
                 omp_unset_lock(&lock);
+                printf("Got%d\n", omp_get_thread_num());
+                fflush(stdout);
                 if (e->get_size() == 0)
-                    break;
-                if(debug)
                 {
-                    printf("Machine%d——Hi,compute e:[size=%d,last=%d]\n",machine_rank,e->get_size(),e->get_request());
-                    e->print_list();
-                    printf("state=%d\n",e->get_state());
+                    task->nex--;
+                    printf("Del%d\n", omp_get_thread_num());
+                    fflush(stdout);
+                    //printf("*****\n");
+                    //fflush(stdout);
+                    #pragma omp critical
+                    task->zero = ((task->zero) == -1) ? 1 : ((task->zero) + 1);
+                    printf("Zero:%d %d %d\n", task->zero, task->current_depth, omp_get_num_threads());
+                    fflush(stdout);
+                    while ((task->zero) != -1 && (task->zero) != omp_get_num_threads() - 2){printf("zero%d\n", task->zero);fflush(stdout);};
+                    printf("free\n");
+                    fflush(stdout);
+                    if ((task->zero) != -1)
+                    {
+                        printf("Up!!!! %d %d\n", task->zero, task->current_depth);
+                        fflush(stdout);
+                        if (task->current_depth == 1)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            if (omp_get_thread_num() == omp_get_num_threads() - 1)
+                            {
+                                printf("ready\n");
+                                fflush(stdout);
+                                omp_set_lock(&lock);
+                                printf("go\n");
+                                fflush(stdout);
+                                for (int i = 0; i < N; i++)
+                                {
+                                    task->q[task->current_depth][i].clear();
+                                }
+                                assert(task->size[task->current_depth] == 0);
+                                task->current_depth--;
+                                printf("gone\n");
+                                fflush(stdout);
+                                omp_unset_lock(&lock);
+                                task->zero = -1;
+                            }
+                            else
+                            {
+                                while (task->zero != -1);
+                            }
+                            printf("hahaha %d\n", task->zero);
+                            fflush(stdout);
+                        }
+                    }
+                    printf("ZeroX:%d %d\n", task->zero, task->current_depth);
                     fflush(stdout);
                 }
-                computation(e, task,debug);
+                else
+                {
+                    printf("!!!%d %d %d\n", omp_get_thread_num(), e->get_size(), task->current_depth);
+                    fflush(stdout);
+                    computation(e, task,debug);
+                    printf("xxx %d\n", omp_get_thread_num());
+                    fflush(stdout);
+                    if(debug)
+                    {
+                        //printf("Machine%d——Hi,compute e:[size=%d,last=%d]\n",machine_rank,e->get_size(),e->get_request());
+                        e->print_list();
+                        //printf("state=%d\n",e->get_state());
+                        //fflush(stdout);
+                    }
+                }
             }
             MPI_Barrier(MPI_COMM_WORLD);
             comm->computation_done();
