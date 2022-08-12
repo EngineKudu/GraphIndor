@@ -67,12 +67,13 @@ int main(int argc,char *argv[]) {
         printf("pattern is invalid!\n");
         return 0;
     }
-*/
+    */
+
     int my_rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     double count_t1 = get_wall_time();
     int thread_count = 24;
-    //long long ans = g->pattern_matching(schedule_iep, thread_count);
+//    long long ans = g->pattern_matching(schedule_iep, thread_count);
     long long ans=graph_mining(g_d,0);
     double count_t2 = get_wall_time();
     if(my_rank==0)

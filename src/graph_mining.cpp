@@ -94,8 +94,11 @@ long long graph_mining(Graph_D* graph,int debug)
         task->insert(new_e, new_e->is_last, i == (graph->range_r));
     }
     task->current_depth = 1;
-    printf("%d %d %d\n", graph->range_l, graph->range_r, task->size[task->current_depth]);
-    fflush(stdout);
+    if(debug)
+    {
+        printf("Machine %d:%d %d %d\n",K, graph->range_l, graph->range_r, task->size[task->current_depth]);
+        fflush(stdout);
+    }
     task->current_machine[task->current_depth] = K;
     task->commu[task->current_depth] = K;
     omp_init_lock(&lock);
@@ -103,8 +106,11 @@ long long graph_mining(Graph_D* graph,int debug)
     {
         int my_rank = omp_get_thread_num();
         int thread_count = omp_get_num_threads();
-        printf("I'm thread %d of machine %d.\n",my_rank,K);
-        fflush(stdout);
+        if(debug)
+        {
+            printf("I'm thread %d of machine %d.\n",my_rank,K);
+            fflush(stdout);
+        }
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
         if (my_rank == 0) comm->give_ans(); 
