@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 long long extend_result=0;
-const int NUM_THREADS=4;
+const int NUM_THREADS=3;
 int S = 0, SS = 0;
 static omp_lock_t lock;
 
@@ -64,12 +64,6 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
 void computation(Embedding *e, Task_Queue* task,int debug)
 {
     std::vector<Embedding*>* vec=new std::vector<Embedding*>;
-    if(debug)
-    {
-        printf("Hi,compute e:[size=%d,last=%d]\n",e->get_size(),e->get_request());
-        fflush(stdout);
-        e->print_list();
-    }
     extend(e,vec);
     if(debug)
     {
@@ -82,11 +76,6 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         Embedding* new_e=vec->at(i);
         #pragma omp critical
             task->insert(new_e, new_e->is_last , (i + 1) == (int)(vec->size()));
-        if(debug)
-        {
-            printf("INS%d\n", new_e->get_size());
-            fflush(stdout);
-        }
     }
     omp_unset_lock(&lock);
     e->set_state(2);
@@ -94,8 +83,9 @@ void computation(Embedding *e, Task_Queue* task,int debug)
 
 long long graph_mining(Graph_D* graph,int debug)
 {
-    int K;
+    int K,N;
     MPI_Comm_rank(MPI_COMM_WORLD, &K);
+    MPI_Comm_size(MPI_COMM_WORLD, &N);
     Comm* comm=new Comm(graph);
     Task_Queue* task=new Task_Queue(graph);
     for (int i = graph->range_l; i <= graph->range_r; i++) //加入一个点的embedding
@@ -117,8 +107,8 @@ long long graph_mining(Graph_D* graph,int debug)
         fflush(stdout);
         int machine_rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &machine_rank);
-        //if (my_rank == 0) comm->give_ans(); else 
-        if (my_rank == 1) comm->ask_ans(task);
+        if (my_rank == 0) comm->give_ans(); 
+        else if (my_rank == 1) comm->ask_ans(task);
         else if (my_rank > 1)//> 1)
         {
             while (true)
@@ -130,27 +120,30 @@ long long graph_mining(Graph_D* graph,int debug)
                 omp_unset_lock(&lock);
                 if (e->get_size() == 0)
                     break;
-                if(debug) printf("S%d %d\n", e->get_size(),e->get_request());
-                fflush(stdout);
+                if(debug)
+                {
+                    printf("Machine%d——Hi,compute e:[size=%d,last=%d]\n",machine_rank,e->get_size(),e->get_request());
+                    e->print_list();
+                    printf("state=%d\n",e->get_state());
+                    fflush(stdout);
+                }
                 computation(e, task,debug);
             }
+            MPI_Barrier(MPI_COMM_WORLD);
             comm->computation_done();
         }
     }
-    //Todo: 向其他机器发送结束信号
-    std::cout << "()" << extend_result << std::endl;
-    omp_destroy_lock(&lock);
-/*
-    int SSS = 0;
-    Edges* e;
-    for (int i = 0; i < 7115; i++)
+    if(K==0)
     {
-        e = new Edges();
-        graph->get_neighbor(i, e);
-        SSS += e->e_cnt;
+        for (int i=1;i<N;++i)
+        {
+            long long ans;
+            MPI_Recv(&ans,1,MPI_LONG,i,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            extend_result+=ans;
+        }
     }
-    printf("%d %d %d\n", S, SS, SSS);
-    fflush(stdout);
-*/
+    else
+        MPI_Send(&extend_result,1,MPI_LONG,0,0,MPI_COMM_WORLD);
+    omp_destroy_lock(&lock);
     return extend_result;
 }
