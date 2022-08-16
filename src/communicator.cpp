@@ -4,6 +4,9 @@
 #include <mpi.h>
 #include <omp.h>
 #include <iostream>
+#include "../include/common.h"
+
+const int cache_degree=64;
 
 void Comm::give_ans() //线程0-回复其他机器的询问
 {
@@ -58,6 +61,9 @@ void Comm::ask_ans(Task_Queue* task)//线程1
     int comm_sz, my_rank;
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+    double sum_time=0;
+
     while (!all_solved)
     {
         #pragma omp flush(task)
@@ -95,19 +101,33 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                 printf("size====[%d,%d,%d]\n",depth,index,size);
                 fflush(stdout);
                 */
-
+                double count_t1 = get_wall_time();
+    
                 int now_pos=0;
                 while(now_pos<size)
                 {
                     MPI_Status status;
-                    int ask_size=0;
-                    for (int i=now_pos;i<size;++i)
+                    int ask_size=0,las_pos=now_pos;
+                    for (int i=las_pos;i<size;++i)
                     {
+                        now_pos=i+1;
                         int x=vec[i]->get_request();
+                        int new_x=x%hash_mod;
+                        if(hash_value[new_x]==x)
+                        {
+                            vec[i]->add_edge(hash_table[new_x]);
+                            continue;
+                        }
+                        /*
+                        if(in_cache.find(x)!=in_cache.end())
+                        {
+                            vec[i]->add_edge(edge_cache[ in_cache[x] ]);
+                            continue;
+                        }
+                        */
                         ask_buffer[ask_size++]=x;
                         if(ask_size==buffer_size) break;
                     }
-                    now_pos=std::min(size,now_pos+buffer_size);
                     MPI_Send(ask_buffer,ask_size,MPI_INT,index,graph->all_vertex+my_rank,MPI_COMM_WORLD);
                     /*
                     printf("machine %d ask:size=%d\n",my_rank,ask_size);
@@ -115,12 +135,17 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                     for (int i=0;i<size;++i)
                         printf("[%d]",ask_buffer[i]);
                     fflush(stdout);
+                    printf("%d %d %d\n",las_pos,now_pos,ask_size);
+                    fflush(stdout);
                     */
-                    for (int i=0;i<size;++i)
+                    for (int i=las_pos;i<now_pos;++i)
                     {
-                        MPI_Recv(recv_buffer,max_degree,MPI_INT,index,vec[i]->get_request(),MPI_COMM_WORLD,&status);
-                        Edges* edge=new Edges();
-                        edge->v=vec[i]->get_request();
+                        if(vec[i]->get_state()==1) continue;
+                        int x=vec[i]->get_request();
+                        int new_x=x%hash_mod;
+                        MPI_Recv(recv_buffer,max_degree,MPI_INT,index,x,MPI_COMM_WORLD,&status);
+                        edge=new Edges();
+                        edge->v=x;
                         int cnt=0;
                         MPI_Get_count(&status,MPI_INT,&cnt);
                         edge->e_cnt=cnt;
@@ -128,6 +153,15 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                         for (int j=0;j<edge->e_cnt;++j)
                             edge->vet[j]=recv_buffer[j];
                         vec[i]->add_edge(edge);
+                        hash_value[new_x]=x;
+                        hash_table[new_x]=edge;
+                        /*
+                        if(cnt>cache_degree&&cache_now_size<cache_size-1)
+                        {
+                            in_cache[x]=++cache_now_size;
+                            edge_cache[ cache_now_size ]=edge;
+                        }
+                        */
                         /*
                         printf("Recv %u:size=%d\n[",edge->v,cnt);
                         fflush(stdout);
@@ -141,10 +175,13 @@ void Comm::ask_ans(Task_Queue* task)//线程1
                     //printf("End\n");
                     //fflush(stdout);
                 }
+                double count_t2 = get_wall_time();
+                sum_time+=count_t2-count_t1;
             }
             task->is_commued[depth][index] = 1;
         }
     }
+    printf("communicate time = %.6lf\n",sum_time);
 }
 
 void Comm::computation_done()

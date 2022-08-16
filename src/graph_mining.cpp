@@ -46,7 +46,7 @@ void extend(Embedding *e,std::vector<Embedding*>* vec)
         for (int i = 0; i < cnt; i++)
         {
             SS++;
-            Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt));
+	    Embedding* ep=new Embedding(e, list[0]->vet[i], (e->is_last)&&(i+1==cnt));
             vec->push_back(ep);
         }
     }

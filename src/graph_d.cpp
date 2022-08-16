@@ -19,6 +19,8 @@ void Graph_D::init(Graph* graph)
     v_cnt=0,e_cnt=0;
     vertex=new e_index_t[range_r-range_l+2];
     edge=new v_index_t[ G->vertex[range_r+1]-G->vertex[range_l] ];
+    for (int i=0;i<all_vertex;++i)
+        maxdegree=std::max(maxdegree,G->vertex[i+1]-G->vertex[i]);
     for (v_index_t i=range_l;i<=range_r;++i)
     {
         vertex[v_cnt]=G->vertex[i];
@@ -29,7 +31,7 @@ void Graph_D::init(Graph* graph)
     }
     vertex[v_cnt]=e_cnt;
     printf("Machine %d load vertex %u to %u.Success!\n",my_rank,range_l,range_r);
-    printf("e_cnt%lu %lu\n", e_cnt, graph->e_cnt);
+    printf("e_cnt%lu %lu\nmaxdegree=%lu\n", e_cnt, graph->e_cnt,maxdegree);
     fflush(stdout);
     return ;
 }

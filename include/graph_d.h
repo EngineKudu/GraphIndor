@@ -5,15 +5,15 @@
 # include "edges.h"
 # include <cstdint>
 
-typedef int32_t v_index_t;//
-typedef int64_t e_index_t ; //暂时改下
+typedef int32_t v_index_t;
+typedef int64_t e_index_t ;
 typedef std::pair<v_index_t,v_index_t> pii ;
 
 class Graph_D
 {
 public:
     v_index_t v_cnt,block_size,all_vertex; // number of vertex(this part)
-    e_index_t e_cnt; // number of edge(this part)
+    e_index_t e_cnt,maxdegree; // number of edge(this part)
     v_index_t range_l,range_r;
 
     v_index_t *edge; // edges
@@ -25,6 +25,7 @@ public:
         e_cnt = 0LL;
         edge = nullptr;
         vertex = nullptr;
+        maxdegree = 0;
     }
 
     ~Graph_D() 
