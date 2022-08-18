@@ -45,6 +45,7 @@ bool Task_Queue::insert_vec(Embedding* e, std::vector<Embedding*>* vec)
 {
     for (int i = 0; i < (int)vec->size(); i++)
     {
+        zero = -1;
         Embedding* new_e=vec->at(i);
         #pragma omp critical
         {
@@ -109,7 +110,7 @@ Embedding* Task_Queue::new_task()
         //fflush(stdout);
         if (index[depth][machine] < (int)q[depth][machine].size())
         {
-            zero = -1;
+            //zero = -1;
             //return &nul;
             //printf("False%d %d %d %d\n", K, current_depth, current_machine[current_depth], index[current_depth][current_machine[current_depth]]);
             //fflush(stdout);
@@ -118,7 +119,7 @@ Embedding* Task_Queue::new_task()
             //fflush(stdout);
             while (1)
             {   
-                printf("wait\n");
+                printf("wait%d\n", current_depth);
                 fflush(stdout);
                 if(e->get_state()==1) break;
             }
