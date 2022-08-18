@@ -112,7 +112,6 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         {
             has_down = true;
             task->ext = true;
-            task->zero = -1;
             while (task->nex != 0){printf("wait%d\n", task->nex);fflush(stdout);};
             omp_set_lock(&lock);
             printf("DOWN!!!!!\n");
@@ -128,6 +127,7 @@ void computation(Embedding *e, Task_Queue* task,int debug)
                 task->index[task->current_depth][i] = 0;
                 task->is_commued[task->current_depth][i] = 0;
             }
+            task->zero = -1;
             omp_unset_lock(&lock);
             task->ext = false;
         }
@@ -188,8 +188,6 @@ long long graph_mining(Graph_D* graph,int debug)
                 fflush(stdout);
                 if (e->get_size() == 0)
                 {
-                    task->nex--;
-                    while (has_down);
                     dcnt++;
                     printf("Del%d\n", omp_get_thread_num());
                     fflush(stdout);
@@ -202,7 +200,12 @@ long long graph_mining(Graph_D* graph,int debug)
                         task->zero = ((task->zero) == -1) ? 1 : ((task->zero) + 1);
                     }
                     int now_depth = task->current_depth;
-                    printf("Zero:%d %d %d\n", task->zero, task->current_depth, omp_get_thread_num());
+                    task->nex--;
+                    printf("Zero:%d %d %d %d\n", task->zero, task->current_depth, omp_get_thread_num());
+                    omp_set_lock(&lock);
+                    printf("ffzero%d\n", task->zero);
+                    fflush(stdout);
+                    omp_unset_lock(&lock);
                     fflush(stdout);
                     while ((task->zero) != -1 && (task->zero) != omp_get_num_threads() - 2)
                     {
@@ -286,7 +289,11 @@ long long graph_mining(Graph_D* graph,int debug)
                 {
                     printf("has_down\n");
                     fflush(stdout);
-                    while (dcnt != 0);
+                    while (dcnt != 0)
+                    {
+                        //printf("wait_dcnt\n");
+                        fflush(stdout);
+                    }
                     has_down = 0;
                 }
             }
