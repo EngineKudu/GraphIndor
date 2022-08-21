@@ -13,7 +13,7 @@
 #include <stdio.h>
 
 long long extend_result=0;
-const int NUM_THREADS=4;
+const int NUM_THREADS=3;
 int S = 0, SS = 0;
 static omp_lock_t lock, lock_d, lock_u;
 volatile int ccnt, cccnt, has_down, has_up, dcnt;
