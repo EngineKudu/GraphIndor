@@ -15,8 +15,8 @@
 long long extend_result=0;
 const int NUM_THREADS=4;
 int S = 0, SS = 0;
-static omp_lock_t lock;
-volatile int ccnt, cccnt, has_down, dcnt;
+static omp_lock_t lock, lock_d, lock_u;
+volatile int ccnt, cccnt, has_down, has_up, dcnt;
 
 v_index_t get_union(e_index_t len1,e_index_t len2,v_index_t* t1,v_index_t* t2)
 {
@@ -71,11 +71,11 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         fflush(stdout);
         e->print_list();
     }
-    printf("begin%d\n", omp_get_thread_num());
-    fflush(stdout);
+//    printf("begin%d\n", omp_get_thread_num());
+//    fflush(stdout);
     extend(e,vec);
-    printf("end\n");
-    fflush(stdout);
+//    printf("end\n");
+//    fflush(stdout);
     if(debug)
     {
         printf("extend make %d new embeddings\n",(int)vec->size());
@@ -86,6 +86,7 @@ void computation(Embedding *e, Task_Queue* task,int debug)
     omp_set_lock(&lock);
 //    task->nex++;
     bool ff = task->insert_vec(e, vec);
+    #pragma omp atomic
     task->nex--;
     /*
     for (int i = 0; i < (int)vec->size(); i++)
@@ -100,9 +101,10 @@ void computation(Embedding *e, Task_Queue* task,int debug)
         }
     }*/
     omp_unset_lock(&lock);
-    printf("Now%d %d\n", omp_get_thread_num(), task->nex);
+//    printf("Now%d %d\n", omp_get_thread_num(), task->nex);
     fflush(stdout);
-    if (task->ext)/*if (task->nex)*/
+    /*
+    if (task->ext)//if (task->nex)
     {
         while (task->ext == true){printf("???\n");fflush(stdout);}
     }
@@ -110,6 +112,9 @@ void computation(Embedding *e, Task_Queue* task,int debug)
     {
         if (ff == true)
         {
+            dcnt = 0;
+            printf("to zero %d\n", omp_get_thread_num());
+            fflush(stdout);
             has_down = true;
             task->ext = true;
             while (task->nex != 0){printf("wait%d\n", task->nex);fflush(stdout);};
@@ -131,15 +136,48 @@ void computation(Embedding *e, Task_Queue* task,int debug)
             omp_unset_lock(&lock);
             task->ext = false;
         }
+    }*/
+    omp_set_lock(&lock_d);
+    if (ff == true)
+    {
+        if (! has_down)
+        {
+            dcnt = 0;
+//            printf("to zero %d\n", omp_get_thread_num());
+//            fflush(stdout);
+            has_down = true;
+            task->ext = true;
+            while (task->nex != 0){/*printf("wait%d\n", task->nex);fflush(stdout);*/};
+            omp_set_lock(&lock);
+//            printf("DOWN!!!!!\n");
+            fflush(stdout);
+            task->current_depth++;
+            int N = task->graph->get_machine_cnt(); //Todo: 机器数量
+            int K = task->graph->get_machine_id(); //Todo: 当前机器的编号
+            task->current_machine[task->current_depth] = K;
+            task->commu[task->current_depth] = K;
+            task->size[task->current_depth + 1] = 0;
+            for (int i = 0; i < N; i++)
+            {
+                task->index[task->current_depth][i] = 0;
+                task->is_commued[task->current_depth][i] = 0;
+            }
+            task->zero = -1;
+            omp_unset_lock(&lock);
+            task->ext = false;
+        }
     }
-    printf("down done\n");
-    fflush(stdout);
+    omp_unset_lock(&lock_d);
+//    printf("down done%d %d\n", omp_get_thread_num(), dcnt);
+//    fflush(stdout);
     e->set_state(2);
 }
 
 long long graph_mining(Graph_D* graph,int debug)
 {
     omp_init_lock(&lock);
+    omp_init_lock(&lock_d);
+    omp_init_lock(&lock_d);
     printf("???\n");
     fflush(stdout);
     int K,N;
@@ -172,10 +210,13 @@ long long graph_mining(Graph_D* graph,int debug)
         {
             while (true)
             {
+                //omp_set_lock(&lock_d);
+                #pragma omp atomic
+                task->nex++;
+                //omp_unset_lock(&lock_d);
                 #pragma omp flush(task)
                 Embedding* e;
                 omp_set_lock(&lock);
-                task->nex++;
 //                printf("Add%d %d\n", omp_get_thread_num(), task->nex);
 //                fflush(stdout);
 //                printf("lock%d\n", omp_get_thread_num());
@@ -188,61 +229,69 @@ long long graph_mining(Graph_D* graph,int debug)
 //                fflush(stdout);
                 if (e->get_size() == 0)
                 {
-                    dcnt++;
-                    printf("Del%d\n", omp_get_thread_num());
-                    fflush(stdout);
+//                    dcnt++;
+//                    printf("Del%d\n", omp_get_thread_num());
+//                    fflush(stdout);
                     //printf("*****\n");
                     //fflush(stdout);
                     omp_set_lock(&lock);
                     #pragma omp critical
                     {
-                        ccnt = 0;
-                        cccnt = 0;
+                        has_up = false;
+//                        cccnt = 0;
                         task->zero = ((task->zero) == -1) ? 1 : ((task->zero) + 1);
-                        if (has_down)
+                        /*if (has_down)
                         {
                             task->zero = -1;
-                        }
+                        }*/
                     }
                     omp_unset_lock(&lock);
                     int now_depth = task->current_depth;
+                    #pragma omp atomic
                     task->nex--;
-//                    printf("Zero:%d %d %d %d\n", task->zero, task->current_depth, omp_get_thread_num());
-                    omp_set_lock(&lock);
-//                    printf("ffzero%d\n", task->zero);
+//                    printf("Zero:%d %d %d\n", task->zero, task->current_depth, omp_get_thread_num());
 //                    fflush(stdout);
-                    omp_unset_lock(&lock);
+//                    omp_set_lock(&lock);
+//                    printf("ffzero%d\n", task->zero);
+//                    omp_unset_lock(&lock);
 //                    fflush(stdout);
                     while ((task->zero) != -1 && (task->zero) != omp_get_num_threads() - 2)
                     {
-                        //printf("zero%d %d\n", task->zero, task->nex);
+//                        printf("zero%d %d %d\n", task->zero, task->nex, has_down);
 //                        fflush(stdout);
-                        if (now_depth != task->current_depth)
+                        //if (now_depth != task->current_depth)
+                        if (has_down)
                         {
                             task->zero = -1;
                             break;
                         }
                     }
-                    dcnt--;
-                    fflush(stdout);
+//                    dcnt--;
+//                    printf("Out%d\n", omp_get_thread_num());
+//                    fflush(stdout);
+                    omp_set_lock(&lock_u);
                     if ((task->zero) != -1)
                     {
-                        #pragma omp critical
-                        cccnt++;
-                        while (cccnt != omp_get_num_threads() - 2);
+//                        #pragma omp critical
+//                        cccnt++;
+//                        while (cccnt != omp_get_num_threads() - 2);
 //                        printf("Up!!!! %d %d\n", task->zero, now_depth);
 //                        fflush(stdout);
                         if (now_depth == 1)
                         {
 //                            printf("break!\n");
 //                            fflush(stdout);
+                            omp_unset_lock(&lock_u);
                             break;
                         }
                         else
                         {
-                            if (omp_get_thread_num() == omp_get_num_threads() - 1)
+                            if (! has_up)
                             {
-//                                printf("ready\n");
+                                ccnt = 0;
+                                cccnt = 0;
+                                has_up = true;
+//                                printf("ready%d\n", omp_get_thread_num());
 //                                fflush(stdout);
                                 omp_set_lock(&lock);
 //                                printf("go\n");
@@ -256,7 +305,41 @@ long long graph_mining(Graph_D* graph,int debug)
 //                                printf("gone\n");
 //                                fflush(stdout);
                                 omp_unset_lock(&lock);
-                                task->zero = -1;
+                            }
+                        }
+                    }
+                    omp_unset_lock(&lock_u);
+                    if (has_up)
+                    {
+                        #pragma omp atomic
+                        ccnt++;
+//                        printf("now ccnt:%d %d\n", omp_get_thread_num(), ccnt);
+                        while (ccnt != omp_get_num_threads() - 2);
+                        task->zero = -1;
+                        #pragma omp atomic
+                        cccnt++;
+                        while (cccnt != omp_get_num_threads() - 2);
+//                        printf("hahaha %d\n", task->zero);
+//                        fflush(stdout);
+                    }
+                    /*
+                    if ((task->zero) != -1)
+                    {
+//                        #pragma omp critical
+//                        cccnt++;
+//                        while (cccnt != omp_get_num_threads() - 2);
+                        printf("Up!!!! %d %d\n", task->zero, now_depth);
+                        fflush(stdout);
+                        if (now_depth == 1)
+                        {
+                            printf("break!\n");
+                            fflush(stdout);
+                            break;
+                        }
+                        else
+                        {
+                            if (omp_get_thread_num() == omp_get_num_threads() - 1)
+                            {
                             }
                             else
                             {
@@ -266,23 +349,24 @@ long long graph_mining(Graph_D* graph,int debug)
                                     fflush(stdout);
                                 }
                             }
-                            #pragma omp critical
+                            #pragma omp atomic
                             ccnt++;
+                            printf("now ccnt:%d %d\n", omp_get_thread_num(), ccnt);
                             while (ccnt != omp_get_num_threads() - 2);
                             printf("hahaha %d\n", task->zero);
                             fflush(stdout);
                         }
-                    }
-                    printf("ZeroX:%d %d\n", task->zero, task->current_depth);
-                    fflush(stdout);
+                    }*/
+//                    printf("ZeroX:%d %d\n", task->zero, task->current_depth);
+//                    fflush(stdout);
                 }
                 else
                 {
-                    printf("!!!%d %d %d\n", omp_get_thread_num(), e->get_size(), task->current_depth);
-                    fflush(stdout);
+//                    printf("!!!%d %d %d\n", omp_get_thread_num(), e->get_size(), task->current_depth);
+//                    fflush(stdout);
                     computation(e, task,debug);
-                    printf("xxx %d\n", omp_get_thread_num());
-                    fflush(stdout);
+//                    printf("xxx %d\n", omp_get_thread_num());
+//                    fflush(stdout);
                     if(debug)
                     {
                         //printf("Machine%d——Hi,compute e:[size=%d,last=%d]\n",machine_rank,e->get_size(),e->get_request());
@@ -293,13 +377,17 @@ long long graph_mining(Graph_D* graph,int debug)
                 }
                 if (has_down)
                 {
-                    printf("has_down\n");
-                    fflush(stdout);
-                    while (dcnt != 0)
+                    #pragma omp atomic
+                    dcnt++;
+//                    printf("has_down%d %d\n", omp_get_thread_num(), dcnt);
+//                    fflush(stdout);
+                    while (dcnt != omp_get_num_threads() - 2)
                     {
-                        //printf("wait_dcnt\n");
+                        //printf("wait_dcnt %d %d\n", dcnt, omp_get_thread_num());
                         fflush(stdout);
                     }
+//                    printf("out\n");
+//                    fflush(stdout);
                     has_down = 0;
                 }
             }

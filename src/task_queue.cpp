@@ -119,8 +119,8 @@ Embedding* Task_Queue::new_task()
             //fflush(stdout);
             while (1)
             {   
-                printf("wait%d\n", current_depth);
-                fflush(stdout);
+//                printf("wait%d\n", current_depth);
+//                fflush(stdout);
                 if(e->get_state()==1) break;
             }
             //printf("middle%d\n", omp_get_thread_num());
